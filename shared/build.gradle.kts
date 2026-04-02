@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -12,22 +11,13 @@ kotlin {
             jvmTarget.set(JvmTarget.JVM_11)
         }
     }
-    
-    jvm()
-    
-    js {
-        browser()
-    }
-    
-    @OptIn(ExperimentalWasmDsl::class)
-    wasmJs {
-        browser()
-    }
-    
+
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+
     sourceSets {
-        commonMain.dependencies {
-            // put your Multiplatform dependencies here
-        }
+        commonMain.dependencies {}
         commonTest.dependencies {
             implementation(libs.kotlin.test)
         }

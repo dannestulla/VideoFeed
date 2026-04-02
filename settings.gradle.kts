@@ -30,4 +30,18 @@ dependencyResolutionManagement {
 
 include(":composeApp")
 include(":server")
-include(":shared")
+
+// Core modules
+include(":core:domain")
+include(":core:data")
+
+// Feature modules
+include(":feature:auth:domain")
+include(":feature:auth:data")
+include(":feature:auth:presentation")
+include(":feature:feed:domain")
+include(":feature:feed:data")
+include(":feature:feed:presentation")
+include(":feature:upload:domain")
+include(":feature:upload:data")
+include(":feature:upload:presentation")
