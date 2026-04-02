@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew :composeApp:assembleDebug)",
+      "Bash(./gradlew :help)",
+      "Bash(./gradlew :core:domain:jvmTest:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(./gradlew :core:data:jvmTest:*)",
+      "Bash(./gradlew :feature:auth:domain:build:*)",
+      "Bash(git commit:*)",
+      "Bash(./gradlew :server:compileKotlin)",
+      "Bash(./gradlew :feature:auth:build :feature:feed:build :feature:upload:build)"
+    ]
+  }
+}
