@@ -2,6 +2,8 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **⚠️ ARCHITECTURE UPDATE (2026-04-02):** Ignore any `:feature:feed:*` module references. There are **3 Gradle modules only: `:composeApp`, `:server`, `:shared`**. Feed metrics additions go in `:shared` under the existing `domain/feed/`, `data/feed/`, `presenter/feed/` packages.
+
 **Goal:** Add simple optimistic like and view count interactions to the video feed. Tapping Like immediately flips `isLiked` and increments `likeCount` in the MVI state, fires a fire-and-forget request to the backend, and reverts the state if the request fails.
 
 **Architecture:** No new modules. Metrics are additions to the existing `feature:feed` layers. Backend gets two new endpoints: `POST /videos/{id}/like` and `POST /videos/{id}/view`. The KMP `FeedViewModel` handles optimistic state updates. Android and iOS UIs add a like button and view/like count overlays to the existing feed item composable/view.

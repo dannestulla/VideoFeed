@@ -2,9 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **⚠️ ARCHITECTURE UPDATE (2026-04-02):** Ignore all `:feature:upload:*` module references. There are **3 Gradle modules only: `:composeApp`, `:server`, `:shared`**. Upload code lives in `:shared` as package folders: `domain/upload/`, `data/upload/`, `presenter/upload/`. File paths like `feature/upload/domain/src/.../Foo.kt` map to `shared/src/commonMain/kotlin/br/gohan/videofeed/domain/upload/Foo.kt`.
+
 **Goal:** Implement the video upload feature — KMP ViewModels coordinating a three-step flow (presign → direct R2 upload with live progress → register metadata), plus the Android upload screen with a file picker and progress bar.
 
-**Architecture:** `feature:upload:domain` defines two interfaces: `UploadRemoteDataSource` (presign + register via Ktor backend) and `R2UploadDataSource` (PUT bytes directly to Cloudflare R2). `feature:upload:data` implements both. `feature:upload:presentation` holds `UploadViewModel` (KMP shared). The Android upload screen in `:composeApp` owns the file picker and feeds raw bytes into the ViewModel.
+**Architecture:** All upload KMP code lives in `:shared` under `domain/upload/`, `data/upload/`, `presenter/upload/`. The Android upload screen in `:composeApp` owns the file picker and feeds raw bytes into the ViewModel.
 
 **Tech Stack:** KMP, Ktor Client, Koin, Compose, `ActivityResultContracts.GetContent` for file picking
 

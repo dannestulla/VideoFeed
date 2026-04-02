@@ -1,6 +1,8 @@
 # VideoFeed — Design Spec
 **Date:** 2026-04-01
 
+> **⚠️ ARCHITECTURE UPDATE (2026-04-02):** The Module Structure section below is outdated. The correct structure uses **3 Gradle modules only** — no `:core:*` or `:feature:*` sub-modules. See the corrected structure below.
+
 ## Overview
 
 A proof-of-concept TikTok-style vertical video feed app showcasing senior Kotlin Multiplatform (KMP) development skills. The app runs on Android (Compose) and iOS (SwiftUI), sharing business logic via KMP with SKIE for seamless Swift/coroutine interop. The backend is a Ktor server backed by Cloudflare R2 for video storage.
@@ -53,37 +55,47 @@ A proof-of-concept TikTok-style vertical video feed app showcasing senior Kotlin
 
 ## Module Structure
 
+**3 Gradle modules. One `build.gradle.kts` each. No sub-modules.**
+
 ```
-:core:domain        — Result<T,E>, DataError, Error interface, shared models (Video, User)
-:core:data          — HttpClientFactory, TokenStorage (expect/actual: DataStore / Keychain)
-:core:presentation  — UiText, DataError.toUiText()
-:build-logic        — Gradle convention plugins
-
-:feature:auth:domain       — AuthRemoteDataSource interface, AuthError
-:feature:auth:data         — KtorAuthDataSource
-:feature:auth:presentation — AuthViewModel, LoginState/Action/Event, RegisterState/Action/Event
-
-:feature:feed:domain       — VideoRemoteDataSource interface
-:feature:feed:data         — KtorVideoDataSource
-:feature:feed:presentation — FeedViewModel, FeedState/Action/Event
-
-:feature:upload:domain     — VideoUploadDataSource interface, UploadError
-:feature:upload:data       — KtorUploadDataSource, R2UploadDataSource
-:feature:upload:presentation — UploadViewModel, UploadState/Action/Event
-
 :composeApp   — Android Compose UI (Root/Screen composables, koinViewModel())
 :server       — Ktor backend (routes, DB, R2 integration)
+:shared       — ALL KMP business logic
 iOS Xcode project — SwiftUI (consumes KMP ViewModels via SKIE)
+```
+
+### `:shared` package layout
+
+```
+shared/src/
+  commonMain/kotlin/br/gohan/videofeed/
+    domain/
+      auth/       — AuthRemoteDataSource interface, AuthError
+      feed/       — VideoRemoteDataSource interface
+      upload/     — UploadRemoteDataSource interface, UploadError
+      model/      — Video, User (shared domain models)
+      error/      — Result<T,E>, DataError, Error interface
+    data/
+      auth/       — TokenStorage interface, KtorAuthDataSource
+      feed/       — KtorVideoDataSource
+      upload/     — KtorUploadDataSource, R2UploadDataSource
+      network/    — HttpClientFactory, SafeCallHelpers
+    presenter/
+      auth/       — LoginViewModel, RegisterViewModel (State/Action/Event)
+      feed/       — FeedViewModel (State/Action/Event)
+      upload/     — UploadViewModel (State/Action/Event)
+  androidMain/    — DataStoreTokenStorage, platform actuals
+  iosMain/        — KeychainTokenStorage, platform actuals
 ```
 
 ### Dependency rules
 
 | Layer | May depend on |
 |---|---|
-| `presentation` | own `domain`, `core:domain`, `core:presentation` |
-| `data` | own `domain`, `core:domain`, `core:data` |
-| `domain` | `core:domain` only |
-| `:app` / `:composeApp` | everything (wires all modules) |
+| `presenter` | `domain` |
+| `data` | `domain` |
+| `domain` | nothing else in the project |
+| `:composeApp` | `:shared` |
 
 ---
 

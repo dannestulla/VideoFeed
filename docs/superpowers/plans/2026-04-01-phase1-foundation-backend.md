@@ -2,9 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Set up the full multi-module KMP project structure and implement the complete Ktor backend (auth, feed, video metadata, R2 presigned uploads, async FFmpeg thumbnail generation).
+> **⚠️ ARCHITECTURE UPDATE (2026-04-02):** Ignore all references to `:core:domain`, `:core:data`, `:feature:*:domain`, `:feature:*:data`, `:feature:*:presentation` modules in this document — that structure was abandoned. The correct structure is **3 Gradle modules: `:composeApp`, `:server`, `:shared`**. All KMP business logic lives in `:shared` as package folders (`domain/`, `data/`, `presenter/`). Tasks 1–5 are already complete. Start at Task 6.
 
-**Architecture:** Multi-module KMP project with `:core:domain`, `:core:data`, and a restructured `:server`. The `shared` and `composeApp` modules are cleaned of web targets. Feature modules (auth, feed, upload) are scaffolded empty — their logic is filled in Phases 2–4.
+**Goal:** Implement the complete Ktor backend (auth, feed, video metadata, R2 presigned uploads, async FFmpeg thumbnail generation).
+
+**Architecture:** 3 Gradle modules — `:composeApp`, `:server`, `:shared`. No sub-modules.
 
 **Tech Stack:** Kotlin 2.3.0, KMP, Ktor 3.3.3, Exposed 0.56.0, PostgreSQL, jbcrypt, Auth0 JWT, AWS SDK v2 (for R2), H2 (tests), Koin 4.1.0, kotlinx-serialization 1.8.1
 

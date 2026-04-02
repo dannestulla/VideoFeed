@@ -2,9 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **⚠️ ARCHITECTURE UPDATE (2026-04-02):** Ignore all `:feature:feed:*` module references. There are **3 Gradle modules only: `:composeApp`, `:server`, `:shared`**. Feed code lives in `:shared` as package folders: `domain/feed/`, `data/feed/`, `presenter/feed/`. File paths like `feature/feed/domain/src/.../Foo.kt` map to `shared/src/commonMain/kotlin/br/gohan/videofeed/domain/feed/Foo.kt`.
+
 **Goal:** Implement the video feed — KMP `FeedViewModel` with pagination, and the Android feed screen using `VerticalPager` + a single shared `ExoPlayer` instance + `SimpleCache` pre-fetching for the next 2 videos.
 
-**Architecture:** `feature:feed:domain` defines `VideoRemoteDataSource` interface and `FeedResult` domain model. `feature:feed:data` implements `KtorVideoDataSource`. `feature:feed:presentation` holds `FeedViewModel` (KMP shared). Android composables in `:composeApp` own the `ExoPlayer` lifecycle, `VideoPreloader`, and `VerticalPager`.
+**Architecture:** All feed KMP code lives in `:shared` under `domain/feed/`, `data/feed/`, `presenter/feed/`. Android composables in `:composeApp` own the `ExoPlayer` lifecycle, `VideoPreloader`, and `VerticalPager`.
 
 **Tech Stack:** KMP, Ktor Client, Koin, Media3 ExoPlayer + SimpleCache, Coil 3, Compose Foundation VerticalPager
 

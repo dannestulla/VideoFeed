@@ -2,9 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **⚠️ ARCHITECTURE UPDATE (2026-04-02):** Ignore all `:feature:auth:domain`, `:feature:auth:data`, `:feature:auth:presentation` module references. There are **3 Gradle modules only: `:composeApp`, `:server`, `:shared`**. Auth code lives in `:shared` as package folders: `domain/auth/`, `data/auth/`, `presenter/auth/`. File paths like `feature/auth/domain/src/.../Foo.kt` map to `shared/src/commonMain/kotlin/br/gohan/videofeed/domain/auth/Foo.kt` (and so on for data/presenter).
+
 **Goal:** Implement the full auth feature — KMP data sources, MVI ViewModels, and Android Compose login/register screens wired with Koin and type-safe navigation.
 
-**Architecture:** `feature:auth:domain` defines the data source interface and error type. `feature:auth:data` implements `KtorAuthDataSource`. `feature:auth:presentation` holds ViewModels (shared KMP). Android composables live in `:composeApp` and consume ViewModels via `koinViewModel()`.
+**Architecture:** All auth KMP code lives in `:shared` under `domain/auth/`, `data/auth/`, `presenter/auth/`. Android composables live in `:composeApp` and consume ViewModels via `koinViewModel()`.
 
 **Tech Stack:** KMP, Ktor Client, Koin 4.1.0, Compose Navigation 2.8.x, Turbine, AssertK, kotlin.test, androidx lifecycle-viewmodel (KMP)
 

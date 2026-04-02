@@ -10,7 +10,11 @@
       "Bash(./gradlew :feature:auth:domain:build:*)",
       "Bash(git commit:*)",
       "Bash(./gradlew :server:compileKotlin)",
-      "Bash(./gradlew :feature:auth:build :feature:feed:build :feature:upload:build)"
+      "Bash(./gradlew :feature:auth:build :feature:feed:build :feature:upload:build)",
+      "Bash(rm:*)",
+      "Bash(./gradlew :shared:build)",
+      "Bash(./gradlew :shared:build --no-configuration-cache)",
+      "Bash(grep -v \"^\\\\s*$\")"
     ]
   }
 }
