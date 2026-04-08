@@ -68,16 +68,19 @@ class FeedViewModel(
     private fun loadNextPage() {
         isLoadingNextPage = true
         viewModelScope.launch {
-            videoDataSource.getFeed(page = currentPage, limit = 10)
-                .onSuccess { result ->
-                    _state.update { it.copy(
-                        videos = it.videos + result.videos.map { v -> v.toVideoUi() }
-                    )}
-                    isLastPage = !result.hasMore
-                    currentPage++
-                }
-                .onFailure { /* silently ignore pagination errors */ }
-            isLoadingNextPage = false
+            try {
+                videoDataSource.getFeed(page = currentPage, limit = 10)
+                    .onSuccess { result ->
+                        _state.update { it.copy(
+                            videos = it.videos + result.videos.map { v -> v.toVideoUi() }
+                        )}
+                        isLastPage = !result.hasMore
+                        currentPage++
+                    }
+                    .onFailure { /* silently ignore pagination errors */ }
+            } finally {
+                isLoadingNextPage = false
+            }
         }
     }
 
