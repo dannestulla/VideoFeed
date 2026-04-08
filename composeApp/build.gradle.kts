@@ -25,6 +25,12 @@ kotlin {
             implementation(libs.navigation.compose)
             implementation(libs.ktor.client.android)
             implementation(projects.shared)
+            implementation(libs.media3.exoplayer)
+            implementation(libs.media3.ui)
+            implementation(libs.media3.datasource)
+            implementation(libs.media3.database)
+            implementation(libs.coil.compose)
+            implementation(libs.coil.network.ktor)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
