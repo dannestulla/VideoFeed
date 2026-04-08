@@ -1,37 +1,55 @@
 # VideoFeed — Claude Instructions
 
-## Communication
+## Module Structure
 
-Always be concise. Short, direct responses. No preamble, no summaries, no filler.
+This project has exactly 3 Gradle modules:
+- `:composeApp` — Android app (Compose UI, Koin Android, Navigation)
+- `:shared` — KMP shared code (domain, data, presenter layers as packages)
+- `:server` — Ktor backend
 
-## Module Structure (CRITICAL)
+Layers (domain, data, presenter) are **packages inside `:shared`**, never separate Gradle modules.
 
-There are exactly **3 Gradle modules**: `:composeApp`, `:server`, `:shared`.
+## MVI Screen Structure
 
-**Never** create new Gradle modules. No `:core`, no `:feature:*`, no `:core:domain`, no `:core:data`.
-Layers are **package folders**, not modules.
+Every screen has exactly **2 files**:
 
-All KMP business logic lives in `:shared/src/` organized as:
-- `br.gohan.videofeed.domain/` — models, Result, DataError, repository interfaces
-- `br.gohan.videofeed.data/` — Ktor client, repositories, TokenStorage implementations
-- `br.gohan.videofeed.presenter/` — ViewModels, MVI state/action/event
+```
+presenter/<feature>/<screen>/
+  <Screen>Contract.kt   ← State + Action + Event (top-level declarations, no wrapping object)
+  <Screen>ViewModel.kt
+```
 
-Platform-specific code goes in `androidMain/` and `iosMain/` inside `:shared`.
+### Contract file pattern
 
-## Stack
+```kotlin
+// LoginContract.kt
+data class LoginState(
+    val email: String = "",
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
 
-- **Android UI**: Jetpack Compose + Media3/ExoPlayer
-- **iOS UI**: SwiftUI + AVPlayer
-- **Shared KMP**: MVI ViewModels + SKIE for Swift interop
-- **DI**: Koin
-- **Backend**: Ktor + Exposed + PostgreSQL
-- **Storage**: Cloudflare R2 (presigned URLs)
-- **Auth**: JWT + bcrypt
-- **Error handling**: `Result<T, E>` + `DataError`
+sealed interface LoginAction {
+    data class OnEmailChange(val email: String) : LoginAction
+    data object OnSubmit : LoginAction
+}
 
-## Do Not
+sealed interface LoginEvent {
+    data object NavigateToFeed : LoginEvent
+}
+```
 
-- Create new Gradle modules
-- Use Hilt or Dagger (use Koin)
-- Use LiveData (use StateFlow/SharedFlow)
-- Use ViewModel from `androidx.lifecycle` directly in `:shared` (keep it KMP-compatible)
+Do **not** wrap in an object or companion. Top-level declarations only.
+
+## Koin DI
+
+- `koin-core` in `:shared` commonMain for data/domain modules
+- `koin-android` in `:composeApp` only — `viewModelOf` DSL is Android-specific
+- ViewModel registrations live in `composeApp/src/androidMain/.../di/AppModules.kt`
+- `baseUrl` passed via `properties(mapOf("baseUrl" to BuildConfig.BASE_URL))` in Application
+
+## Tests
+
+- `:shared` commonTest uses Turbine + AssertK + MockEngine
+- Fakes go in their own files (e.g. `FakeAuthDataSource.kt`), not inline in test files
+- Use `Dispatchers.setMain(UnconfinedTestDispatcher())` in `@BeforeTest`

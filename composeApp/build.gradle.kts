@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 kotlin {
@@ -18,6 +19,12 @@ kotlin {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
+            implementation(libs.koin.android)
+            implementation(libs.koin.compose)
+            implementation(libs.koin.compose.viewmodel)
+            implementation(libs.navigation.compose)
+            implementation(libs.ktor.client.android)
+            implementation(projects.shared)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -45,7 +52,9 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+        buildConfigField("String", "BASE_URL", "\"http://10.0.2.2:8080\"")
     }
+    buildFeatures { buildConfig = true }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
