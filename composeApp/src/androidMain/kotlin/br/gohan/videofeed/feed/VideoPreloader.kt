@@ -1,6 +1,5 @@
 package br.gohan.videofeed.feed
 
-import android.net.Uri
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.cache.CacheDataSource
@@ -10,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import androidx.core.net.toUri
 
 @UnstableApi
 class VideoPreloader(
@@ -22,7 +22,7 @@ class VideoPreloader(
     fun prefetch(url: String) {
         scope.launch {
             try {
-                val dataSpec = DataSpec(Uri.parse(url), 0, 2 * 1024 * 1024)
+                val dataSpec = DataSpec(url.toUri(), 0, 2 * 1024 * 1024)
                 CacheWriter(
                     dataSourceFactory.createDataSource(),
                     dataSpec,

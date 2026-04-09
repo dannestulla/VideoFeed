@@ -24,6 +24,8 @@ import java.util.UUID
 class VideoService(private val thumbnailService: ThumbnailService) {
     private val scope = CoroutineScope(Dispatchers.IO)
 
+    /** Generates a short-lived upload URL so the app can push the video file directly to cloud storage (R2/S3)
+     * without routing the raw bytes through this server. The app uploads to that URL, then calls createVideo. */
     fun presign(filename: String): PresignResponse {
         val videoKey = "videos/${UUID.randomUUID()}/$filename"
         val presignRequest = PutObjectPresignRequest.builder()
@@ -39,6 +41,8 @@ class VideoService(private val thumbnailService: ThumbnailService) {
         return PresignResponse(uploadUrl = url, videoKey = videoKey)
     }
 
+    /** Saves the video metadata (title, CDN URL, uploader) to the database.
+     * Thumbnail extraction runs in the background so the response is returned immediately without making the app wait. */
     fun createVideo(videoKey: String, title: String, uploaderId: String): VideoDto {
         val cdnUrl = "${R2Config.publicUrl}/$videoKey"
         val uploaderUuid = UUID.fromString(uploaderId)
@@ -80,6 +84,8 @@ class VideoService(private val thumbnailService: ThumbnailService) {
         )
     }
 
+    /** Returns a paginated list of videos ordered by newest first.
+     * Fetches one extra row to know if there is a next page (same pattern as Android Paging 3's "load size + 1" trick). */
     fun getFeed(page: Int, limit: Int): FeedResponse {
         val offset = ((page - 1) * limit).toLong()
         val rows = transaction {
@@ -104,6 +110,7 @@ class VideoService(private val thumbnailService: ThumbnailService) {
         return FeedResponse(videos = videos, page = page, hasMore = hasMore)
     }
 
+    /** Looks up a single video by ID, or returns null if not found. */
     fun getVideo(id: String): VideoDto? = try {
         val uuid = UUID.fromString(id)
         transaction {

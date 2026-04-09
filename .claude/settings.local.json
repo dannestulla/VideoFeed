@@ -10,7 +10,8 @@
       "Bash(grep:*)",
       "Bash(mkdir:*)",
       "Skill(update-config)",
-      "Bash(gh pr:*)"
+      "Bash(gh pr:*)",
+      "Bash(find /c/Users/dannn/AndroidStudioProjects/VideoFeed/shared/build/reports/tests -name \"FeedViewModelTest.html\" -exec cat {} \\\\;)"
     ]
   }
 }
