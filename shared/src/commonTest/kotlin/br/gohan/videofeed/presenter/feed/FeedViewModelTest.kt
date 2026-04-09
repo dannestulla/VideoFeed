@@ -8,11 +8,11 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
-import br.gohan.videofeed.domain.error.DataError
-import br.gohan.videofeed.domain.error.Result
+import br.gohan.videofeed.core.error.DataError
+import br.gohan.videofeed.core.error.Result
 import br.gohan.videofeed.domain.feed.FeedResult
 import br.gohan.videofeed.domain.feed.VideoRemoteDataSource
-import br.gohan.videofeed.domain.model.Video
+import br.gohan.videofeed.core.model.Video
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher

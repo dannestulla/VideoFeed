@@ -6,8 +6,8 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
-import br.gohan.videofeed.domain.error.DataError
-import br.gohan.videofeed.domain.error.Result
+import br.gohan.videofeed.core.error.DataError
+import br.gohan.videofeed.core.error.Result
 import br.gohan.videofeed.presenter.auth.FakeAuthDataSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

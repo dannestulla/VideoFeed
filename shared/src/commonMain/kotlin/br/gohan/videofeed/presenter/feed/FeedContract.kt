@@ -1,20 +1,5 @@
 package br.gohan.videofeed.presenter.feed
 
-import br.gohan.videofeed.domain.model.Video
-
-data class VideoUi(
-    val id: String,
-    val title: String,
-    val cdnUrl: String,
-    val thumbnailUrl: String?,
-    val uploaderName: String
-)
-
-fun Video.toVideoUi() = VideoUi(
-    id = id, title = title, cdnUrl = cdnUrl,
-    thumbnailUrl = thumbnailUrl, uploaderName = uploaderName
-)
-
 data class FeedState(
     val videos: List<VideoUi> = emptyList(),
     val isLoading: Boolean = false,

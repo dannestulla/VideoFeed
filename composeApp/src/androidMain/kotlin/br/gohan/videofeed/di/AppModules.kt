@@ -5,7 +5,7 @@ import br.gohan.videofeed.data.auth.DataStoreTokenStorage
 import br.gohan.videofeed.data.auth.TokenStorage
 import br.gohan.videofeed.data.auth.authDataModule
 import br.gohan.videofeed.data.feed.feedDataModule
-import br.gohan.videofeed.data.network.HttpClientFactory
+import br.gohan.videofeed.core.network.HttpClientFactory
 import br.gohan.videofeed.presenter.auth.login.LoginViewModel
 import br.gohan.videofeed.presenter.auth.register.RegisterViewModel
 import br.gohan.videofeed.presenter.feed.FeedViewModel

@@ -2,13 +2,13 @@ package br.gohan.videofeed.data.feed
 
 import br.gohan.videofeed.data.feed.dto.FeedResponseDto
 import br.gohan.videofeed.data.feed.dto.VideoDtoData
-import br.gohan.videofeed.data.network.get
-import br.gohan.videofeed.domain.error.DataError
-import br.gohan.videofeed.domain.error.Result
-import br.gohan.videofeed.domain.error.map
+import br.gohan.videofeed.core.network.get
+import br.gohan.videofeed.core.error.DataError
+import br.gohan.videofeed.core.error.Result
+import br.gohan.videofeed.core.error.map
 import br.gohan.videofeed.domain.feed.FeedResult
 import br.gohan.videofeed.domain.feed.VideoRemoteDataSource
-import br.gohan.videofeed.domain.model.Video
+import br.gohan.videofeed.core.model.Video
 import io.ktor.client.HttpClient
 
 class KtorVideoDataSource(

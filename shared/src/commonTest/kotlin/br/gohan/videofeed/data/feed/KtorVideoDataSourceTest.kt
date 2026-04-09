@@ -5,8 +5,8 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isTrue
-import br.gohan.videofeed.domain.error.DataError
-import br.gohan.videofeed.domain.error.Result
+import br.gohan.videofeed.core.error.DataError
+import br.gohan.videofeed.core.error.Result
 import br.gohan.videofeed.domain.feed.FeedResult
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine

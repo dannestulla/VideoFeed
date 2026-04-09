@@ -3,9 +3,9 @@ package br.gohan.videofeed.presenter.auth.register
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import br.gohan.videofeed.domain.auth.AuthRemoteDataSource
-import br.gohan.videofeed.domain.error.DataError
-import br.gohan.videofeed.domain.error.onFailure
-import br.gohan.videofeed.domain.error.onSuccess
+import br.gohan.videofeed.core.error.DataError
+import br.gohan.videofeed.core.error.onFailure
+import br.gohan.videofeed.core.error.onSuccess
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

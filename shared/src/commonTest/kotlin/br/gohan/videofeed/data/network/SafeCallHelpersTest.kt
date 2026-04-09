@@ -1,7 +1,7 @@
-package br.gohan.videofeed.data.network
+package br.gohan.videofeed.core.network
 
-import br.gohan.videofeed.domain.error.DataError
-import br.gohan.videofeed.domain.error.Result
+import br.gohan.videofeed.core.error.DataError
+import br.gohan.videofeed.core.error.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond

@@ -1,8 +1,8 @@
 package br.gohan.videofeed.presenter.auth
 
 import br.gohan.videofeed.domain.auth.AuthRemoteDataSource
-import br.gohan.videofeed.domain.error.DataError
-import br.gohan.videofeed.domain.error.Result
+import br.gohan.videofeed.core.error.DataError
+import br.gohan.videofeed.core.error.Result
 import kotlinx.coroutines.yield
 
 class FakeAuthDataSource : AuthRemoteDataSource {

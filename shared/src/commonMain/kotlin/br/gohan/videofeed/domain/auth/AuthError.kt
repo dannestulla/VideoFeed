@@ -1,6 +1,6 @@
 package br.gohan.videofeed.domain.auth
 
-import br.gohan.videofeed.domain.error.Error
+import br.gohan.videofeed.core.error.Error
 
 enum class AuthError : Error {
     INVALID_CREDENTIALS,

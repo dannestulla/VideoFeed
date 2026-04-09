@@ -3,11 +3,11 @@ package br.gohan.videofeed.data.auth
 import br.gohan.videofeed.data.auth.dto.AuthResponseDto
 import br.gohan.videofeed.data.auth.dto.LoginRequestDto
 import br.gohan.videofeed.data.auth.dto.RegisterRequestDto
-import br.gohan.videofeed.data.network.post
+import br.gohan.videofeed.core.network.post
 import br.gohan.videofeed.domain.auth.AuthRemoteDataSource
-import br.gohan.videofeed.domain.error.DataError
-import br.gohan.videofeed.domain.error.Result
-import br.gohan.videofeed.domain.error.map
+import br.gohan.videofeed.core.error.DataError
+import br.gohan.videofeed.core.error.Result
+import br.gohan.videofeed.core.error.map
 import io.ktor.client.HttpClient
 
 class KtorAuthDataSource(

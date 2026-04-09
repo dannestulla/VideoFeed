@@ -1,6 +1,6 @@
 package br.gohan.videofeed.domain.feed
 
-import br.gohan.videofeed.domain.model.Video
+import br.gohan.videofeed.core.model.Video
 
 data class FeedResult(
     val videos: List<Video>,

@@ -1,11 +1,11 @@
 package br.gohan.videofeed.domain
 
-import br.gohan.videofeed.domain.error.DataError
-import br.gohan.videofeed.domain.error.Result
-import br.gohan.videofeed.domain.error.map
-import br.gohan.videofeed.domain.error.onFailure
-import br.gohan.videofeed.domain.error.onSuccess
-import br.gohan.videofeed.domain.error.asEmptyResult
+import br.gohan.videofeed.core.error.DataError
+import br.gohan.videofeed.core.error.Result
+import br.gohan.videofeed.core.error.map
+import br.gohan.videofeed.core.error.onFailure
+import br.gohan.videofeed.core.error.onSuccess
+import br.gohan.videofeed.core.error.asEmptyResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

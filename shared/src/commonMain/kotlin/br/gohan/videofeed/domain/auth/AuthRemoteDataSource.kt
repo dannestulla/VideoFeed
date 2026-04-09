@@ -1,7 +1,7 @@
 package br.gohan.videofeed.domain.auth
 
-import br.gohan.videofeed.domain.error.DataError
-import br.gohan.videofeed.domain.error.Result
+import br.gohan.videofeed.core.error.DataError
+import br.gohan.videofeed.core.error.Result
 
 interface AuthRemoteDataSource {
     suspend fun login(email: String, password: String): Result<String, DataError.Network>
