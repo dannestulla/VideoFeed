@@ -23,10 +23,10 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import br.gohan.videofeed.presenter.auth.register.RegisterAction
-import br.gohan.videofeed.presenter.auth.register.RegisterEvent
-import br.gohan.videofeed.presenter.auth.register.RegisterState
-import br.gohan.videofeed.presenter.auth.register.RegisterViewModel
+import br.gohan.videofeed.auth.presenter.RegisterAction
+import br.gohan.videofeed.auth.presenter.RegisterEvent
+import br.gohan.videofeed.auth.presenter.RegisterState
+import br.gohan.videofeed.auth.presenter.RegisterViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 @Composable

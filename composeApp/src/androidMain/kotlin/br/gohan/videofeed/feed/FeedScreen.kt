@@ -26,10 +26,10 @@ import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import br.gohan.videofeed.auth.ObserveAsEvents
-import br.gohan.videofeed.presenter.feed.FeedAction
-import br.gohan.videofeed.presenter.feed.FeedEvent
-import br.gohan.videofeed.presenter.feed.FeedState
-import br.gohan.videofeed.presenter.feed.FeedViewModel
+import br.gohan.videofeed.feed.presenter.FeedAction
+import br.gohan.videofeed.feed.presenter.FeedEvent
+import br.gohan.videofeed.feed.presenter.FeedState
+import br.gohan.videofeed.feed.presenter.FeedViewModel
 import coil3.compose.AsyncImage
 import org.koin.compose.viewmodel.koinViewModel
 import java.io.File
@@ -134,7 +134,7 @@ fun FeedScreen(
 @UnstableApi
 @Composable
 private fun VideoPageItem(
-    video: br.gohan.videofeed.presenter.feed.VideoUi,
+    video: br.gohan.videofeed.feed.presenter.VideoUi,
     isCurrentPage: Boolean,
     exoPlayer: ExoPlayer
 ) {

@@ -23,6 +23,7 @@ h2 = "2.3.232"
 jbcrypt = "0.4"
 auth0-jwt = "4.5.0"
 awssdk-s3 = "2.31.26"
+dotenv = "6.4.1"
 koin = "4.1.0"
 datastore = "1.1.7"
 kermit = "2.0.5"
@@ -84,6 +85,8 @@ jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "jbcrypt" }
 auth0-jwt = { module = "com.auth0:java-jwt", version.ref = "auth0-jwt" }
 # AWS SDK (for Cloudflare R2 — S3-compatible)
 awssdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "awssdk-s3" }
+# Dotenv (server-side local config)
+dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 # Koin
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
