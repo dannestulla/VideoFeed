@@ -53,6 +53,7 @@ class UploadViewModel(
             }
             val presign = (presignResult as Result.Success).data
 
+            // Uploads video to bucket
             r2DataSource.upload(presign.uploadUrl, bytes, selectedMimeType).collect { result ->
                 when (result) {
                     is Result.Success -> _state.update { it.copy(status = UploadStatus.Uploading(result.data)) }
@@ -64,6 +65,7 @@ class UploadViewModel(
             }
             if (_state.value.status is UploadStatus.Error) return@launch
 
+            // Adds video meta data to db
             _state.update { it.copy(status = UploadStatus.Finalizing) }
             val registerResult = remoteDataSource.registerVideo(presign.videoKey, title)
             if (registerResult is Result.Error) {

@@ -52,6 +52,12 @@ class FeedViewModel(
             _state.update { it.copy(isLoading = true, error = null) }
             videoDataSource.getFeed(page = 1, limit = 10)
                 .onSuccess { result ->
+                    if (result.videos.isEmpty()) {
+                        // If bucket has no videos, open upload screen
+                        _state.update { it.copy(isLoading = false) }
+                        _events.send(FeedEvent.NavigateToUpload)
+                        return@launch
+                    }
                     _state.update { it.copy(
                         videos = result.videos.map { it.toVideoUi() },
                         isLoading = false
