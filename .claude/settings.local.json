@@ -16,7 +16,10 @@
       "Read(//mnt/c/Users/dannn/AndroidStudioProjects/**)",
       "Bash(find shared:*)",
       "Read(//c/Users/dannn/AndroidStudioProjects//**)",
-      "Bash(wslpath \"C:\\\\Users\\\\dannn\\\\AndroidStudioProjects\\\\VideoFeed\")"
+      "Bash(wslpath \"C:\\\\Users\\\\dannn\\\\AndroidStudioProjects\\\\VideoFeed\")",
+      "Bash(netstat -ano)",
+      "Bash(taskkill:*)",
+      "Bash(cmd.exe:*)"
     ]
   }
 }
