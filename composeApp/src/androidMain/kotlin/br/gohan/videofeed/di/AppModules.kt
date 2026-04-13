@@ -4,11 +4,13 @@ import androidx.media3.common.util.UnstableApi
 import br.gohan.videofeed.auth.data.DataStoreTokenStorage
 import br.gohan.videofeed.auth.data.TokenStorage
 import br.gohan.videofeed.auth.data.authDataModule
-import br.gohan.videofeed.feed.data.feedDataModule
-import br.gohan.videofeed.core.network.HttpClientFactory
 import br.gohan.videofeed.auth.presenter.LoginViewModel
 import br.gohan.videofeed.auth.presenter.RegisterViewModel
+import br.gohan.videofeed.core.network.HttpClientFactory
+import br.gohan.videofeed.feed.data.feedDataModule
 import br.gohan.videofeed.feed.presenter.FeedViewModel
+import br.gohan.videofeed.upload.data.uploadDataModule
+import br.gohan.videofeed.upload.presenter.UploadViewModel
 import io.ktor.client.engine.android.Android
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModelOf
@@ -28,11 +30,17 @@ val feedPresentationAndroidModule = module {
     viewModelOf(::FeedViewModel)
 }
 
+val uploadPresentationAndroidModule = module {
+    viewModelOf(::UploadViewModel)
+}
+
 @UnstableApi
 val appModules = listOf(
     coreAndroidModule,
     authDataModule,
     authPresentationModule,
     feedDataModule,
-    feedPresentationAndroidModule
+    feedPresentationAndroidModule,
+    uploadDataModule,
+    uploadPresentationAndroidModule
 )

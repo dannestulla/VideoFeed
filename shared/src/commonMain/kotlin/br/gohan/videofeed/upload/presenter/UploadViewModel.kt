@@ -1,9 +1,10 @@
 package br.gohan.videofeed.upload.presenter
 
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import br.gohan.videofeed.core.error.Result
 import br.gohan.videofeed.upload.domain.R2UploadDataSource
 import br.gohan.videofeed.upload.domain.UploadRemoteDataSource
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,9 +15,8 @@ import kotlinx.coroutines.launch
 
 class UploadViewModel(
     private val remoteDataSource: UploadRemoteDataSource,
-    private val r2DataSource: R2UploadDataSource,
-    private val coroutineScope: CoroutineScope
-) {
+    private val r2DataSource: R2UploadDataSource
+) : ViewModel() {
     private val _state = MutableStateFlow(UploadState())
     val state: StateFlow<UploadState> = _state.asStateFlow()
 
@@ -44,7 +44,7 @@ class UploadViewModel(
         val title = _state.value.title.trim()
         if (title.isBlank()) return
 
-        coroutineScope.launch {
+        viewModelScope.launch {
             _state.update { it.copy(status = UploadStatus.Presigning) }
             val presignResult = remoteDataSource.presign(filename)
             if (presignResult is Result.Error) {
