@@ -26,6 +26,6 @@ fun AppNavHost() {
                 }
             }
         )
-        // uploadGraph() added in Phase 4
+        uploadGraph(navController)
     }
 }

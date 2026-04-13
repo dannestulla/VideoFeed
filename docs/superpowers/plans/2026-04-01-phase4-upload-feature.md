@@ -2,11 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-> **⚠️ ARCHITECTURE UPDATE (2026-04-02):** Ignore all `:feature:upload:*` module references. There are **3 Gradle modules only: `:composeApp`, `:server`, `:shared`**. Upload code lives in `:shared` as package folders: `domain/upload/`, `data/upload/`, `presenter/upload/`. File paths like `feature/upload/domain/src/.../Foo.kt` map to `shared/src/commonMain/kotlin/br/gohan/videofeed/domain/upload/Foo.kt`.
-
 **Goal:** Implement the video upload feature — KMP ViewModels coordinating a three-step flow (presign → direct R2 upload with live progress → register metadata), plus the Android upload screen with a file picker and progress bar.
 
-**Architecture:** All upload KMP code lives in `:shared` under `domain/upload/`, `data/upload/`, `presenter/upload/`. The Android upload screen in `:composeApp` owns the file picker and feeds raw bytes into the ViewModel.
+**Architecture:** All upload KMP code lives in `:shared` under `upload/domain/`, `upload/data/`, `upload/presenter/`. The Android upload screen in `:composeApp` owns the file picker and feeds raw bytes into the ViewModel.
 
 **Tech Stack:** KMP, Ktor Client, Koin, Compose, `ActivityResultContracts.GetContent` for file picking
 
@@ -14,47 +12,43 @@
 
 ## File Map
 
-### Version catalog additions
-- `gradle/libs.versions.toml` — none (all deps already present from prior phases)
-
-### `:feature:upload:domain`
+### `:shared` commonMain
 ```
-feature/upload/domain/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/domain/
-  UploadRemoteDataSource.kt   — presign() + registerVideo() interface
-  R2UploadDataSource.kt       — upload() returns Flow<Result<Float, UploadError>>
-  PresignResult.kt            — data class(uploadUrl, videoKey)
-  UploadError.kt              — sealed interface implementing Error
-```
-
-### `:feature:upload:data`
-```
-feature/upload/data/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/data/
-  dto/UploadDtos.kt
-  KtorUploadDataSource.kt
-  KtorR2UploadDataSource.kt
-  uploadDataModule.kt
-feature/upload/data/src/commonTest/kotlin/br/gohan/videofeed/feature/upload/data/
-  KtorUploadDataSourceTest.kt
-  KtorR2UploadDataSourceTest.kt
+shared/src/commonMain/kotlin/br/gohan/videofeed/
+  upload/domain/
+    UploadError.kt
+    PresignResult.kt
+    UploadRemoteDataSource.kt
+    R2UploadDataSource.kt
+  upload/data/
+    dto/UploadDtos.kt
+    KtorUploadDataSource.kt
+    KtorR2UploadDataSource.kt
+    uploadDataModule.kt
+  upload/presenter/
+    UploadContract.kt   ← UploadState, UploadStatus, UploadAction, UploadEvent
+    UploadViewModel.kt
 ```
 
-### `:feature:upload:presentation`
+### `:shared` commonTest
 ```
-feature/upload/presentation/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/presentation/
-  UploadViewModel.kt          — UploadState, UploadStatus, UploadAction, UploadEvent + ViewModel
-  uploadPresentationModule.kt
-feature/upload/presentation/src/commonTest/kotlin/br/gohan/videofeed/feature/upload/presentation/
-  UploadViewModelTest.kt
+shared/src/commonTest/kotlin/br/gohan/videofeed/
+  upload/data/
+    KtorUploadDataSourceTest.kt
+    KtorR2UploadDataSourceTest.kt
+  upload/presenter/
+    FakeUploadDataSources.kt
+    UploadViewModelTest.kt
 ```
 
 ### `:composeApp`
 ```
 composeApp/src/androidMain/kotlin/br/gohan/videofeed/
-  upload/UploadScreen.kt          — Root + Screen composables, file picker
-  upload/UriHelpers.kt            — readBytesFromUri(), getFilenameFromUri(), getMimeTypeFromUri()
+  upload/UriHelpers.kt
+  upload/UploadScreen.kt
   navigation/UploadNavGraph.kt
-  di/AppModules.kt                — updated: add uploadDataModule + uploadPresentationModule
-  navigation/AppNavHost.kt        — updated: add uploadGraph
+  navigation/AppNavHost.kt        — updated: uncomment uploadGraph
+  di/AppModules.kt                — updated: add uploadDataModule + uploadViewModelOf
 ```
 
 ---
@@ -62,17 +56,17 @@ composeApp/src/androidMain/kotlin/br/gohan/videofeed/
 ## Task 1: Upload Domain Layer
 
 **Files:**
-- Create: `feature/upload/domain/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/domain/UploadError.kt`
-- Create: `feature/upload/domain/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/domain/PresignResult.kt`
-- Create: `feature/upload/domain/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/domain/UploadRemoteDataSource.kt`
-- Create: `feature/upload/domain/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/domain/R2UploadDataSource.kt`
+- Create: `shared/src/commonMain/kotlin/br/gohan/videofeed/upload/domain/UploadError.kt`
+- Create: `shared/src/commonMain/kotlin/br/gohan/videofeed/upload/domain/PresignResult.kt`
+- Create: `shared/src/commonMain/kotlin/br/gohan/videofeed/upload/domain/UploadRemoteDataSource.kt`
+- Create: `shared/src/commonMain/kotlin/br/gohan/videofeed/upload/domain/R2UploadDataSource.kt`
 
 - [ ] **Step 1: Create `UploadError.kt`**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.domain
+package br.gohan.videofeed.upload.domain
 
-import br.gohan.videofeed.core.domain.Error
+import br.gohan.videofeed.core.error.Error
 
 sealed interface UploadError : Error {
     data object Presign : UploadError
@@ -84,7 +78,7 @@ sealed interface UploadError : Error {
 - [ ] **Step 2: Create `PresignResult.kt`**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.domain
+package br.gohan.videofeed.upload.domain
 
 data class PresignResult(
     val uploadUrl: String,
@@ -95,10 +89,10 @@ data class PresignResult(
 - [ ] **Step 3: Create `UploadRemoteDataSource.kt`**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.domain
+package br.gohan.videofeed.upload.domain
 
-import br.gohan.videofeed.core.domain.EmptyResult
-import br.gohan.videofeed.core.domain.Result
+import br.gohan.videofeed.core.error.EmptyResult
+import br.gohan.videofeed.core.error.Result
 
 interface UploadRemoteDataSource {
     suspend fun presign(filename: String): Result<PresignResult, UploadError>
@@ -109,9 +103,9 @@ interface UploadRemoteDataSource {
 - [ ] **Step 4: Create `R2UploadDataSource.kt`**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.domain
+package br.gohan.videofeed.upload.domain
 
-import br.gohan.videofeed.core.domain.Result
+import br.gohan.videofeed.core.error.Result
 import kotlinx.coroutines.flow.Flow
 
 interface R2UploadDataSource {
@@ -126,7 +120,7 @@ interface R2UploadDataSource {
 - [ ] **Step 5: Commit**
 
 ```bash
-git add feature/upload/domain/
+git add shared/src/commonMain/kotlin/br/gohan/videofeed/upload/domain/
 git commit -m "feat(upload): add upload domain interfaces and error types"
 ```
 
@@ -135,14 +129,14 @@ git commit -m "feat(upload): add upload domain interfaces and error types"
 ## Task 2: Upload DTOs and `KtorUploadDataSource`
 
 **Files:**
-- Create: `feature/upload/data/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/data/dto/UploadDtos.kt`
-- Create: `feature/upload/data/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/data/KtorUploadDataSource.kt`
-- Create: `feature/upload/data/src/commonTest/kotlin/br/gohan/videofeed/feature/upload/data/KtorUploadDataSourceTest.kt`
+- Create: `shared/src/commonMain/kotlin/br/gohan/videofeed/upload/data/dto/UploadDtos.kt`
+- Create: `shared/src/commonMain/kotlin/br/gohan/videofeed/upload/data/KtorUploadDataSource.kt`
+- Create: `shared/src/commonTest/kotlin/br/gohan/videofeed/upload/data/KtorUploadDataSourceTest.kt`
 
 - [ ] **Step 1: Create `UploadDtos.kt`**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.data.dto
+package br.gohan.videofeed.upload.data.dto
 
 import kotlinx.serialization.Serializable
 
@@ -167,19 +161,18 @@ data class RegisterVideoResponseDto(
 - [ ] **Step 2: Create `KtorUploadDataSource.kt`**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.data
+package br.gohan.videofeed.upload.data
 
-import br.gohan.videofeed.core.data.safeCall
-import br.gohan.videofeed.core.domain.EmptyResult
-import br.gohan.videofeed.core.domain.Result
-import br.gohan.videofeed.core.domain.map
-import br.gohan.videofeed.feature.upload.data.dto.PresignRequestDto
-import br.gohan.videofeed.feature.upload.data.dto.PresignResponseDto
-import br.gohan.videofeed.feature.upload.data.dto.RegisterVideoRequestDto
-import br.gohan.videofeed.feature.upload.data.dto.RegisterVideoResponseDto
-import br.gohan.videofeed.feature.upload.domain.PresignResult
-import br.gohan.videofeed.feature.upload.domain.UploadError
-import br.gohan.videofeed.feature.upload.domain.UploadRemoteDataSource
+import br.gohan.videofeed.core.error.EmptyResult
+import br.gohan.videofeed.core.error.Result
+import br.gohan.videofeed.core.network.post
+import br.gohan.videofeed.upload.data.dto.PresignRequestDto
+import br.gohan.videofeed.upload.data.dto.PresignResponseDto
+import br.gohan.videofeed.upload.data.dto.RegisterVideoRequestDto
+import br.gohan.videofeed.upload.data.dto.RegisterVideoResponseDto
+import br.gohan.videofeed.upload.domain.PresignResult
+import br.gohan.videofeed.upload.domain.UploadError
+import br.gohan.videofeed.upload.domain.UploadRemoteDataSource
 import io.ktor.client.HttpClient
 
 class KtorUploadDataSource(
@@ -188,118 +181,102 @@ class KtorUploadDataSource(
 ) : UploadRemoteDataSource {
 
     override suspend fun presign(filename: String): Result<PresignResult, UploadError> {
-        return safeCall<PresignResponseDto> {
-            httpClient.post<PresignRequestDto, PresignResponseDto>(
-                route = "/videos/presign",
-                baseUrl = baseUrl,
-                body = PresignRequestDto(filename)
-            )
-        }.mapError { UploadError.Presign }
-            .map { PresignResult(it.uploadUrl, it.videoKey) }
+        return when (val result = httpClient.post<PresignRequestDto, PresignResponseDto>(
+            route = "/videos/presign",
+            baseUrl = baseUrl,
+            body = PresignRequestDto(filename)
+        )) {
+            is Result.Success -> Result.Success(PresignResult(result.data.uploadUrl, result.data.videoKey))
+            is Result.Error -> Result.Error(UploadError.Presign)
+        }
     }
 
     override suspend fun registerVideo(videoKey: String, title: String): EmptyResult<UploadError> {
-        return safeCall<RegisterVideoResponseDto> {
-            httpClient.post<RegisterVideoRequestDto, RegisterVideoResponseDto>(
-                route = "/videos",
-                baseUrl = baseUrl,
-                body = RegisterVideoRequestDto(videoKey, title)
-            )
-        }.mapError { UploadError.Register }
-            .map { }
+        return when (val result = httpClient.post<RegisterVideoRequestDto, RegisterVideoResponseDto>(
+            route = "/videos",
+            baseUrl = baseUrl,
+            body = RegisterVideoRequestDto(videoKey, title)
+        )) {
+            is Result.Success -> Result.Success(Unit)
+            is Result.Error -> Result.Error(UploadError.Register)
+        }
     }
 }
 ```
 
-- [ ] **Step 3: Write the failing tests**
+- [ ] **Step 3: Write the tests**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.data
+package br.gohan.videofeed.upload.data
 
-import br.gohan.videofeed.core.domain.Result
-import br.gohan.videofeed.feature.upload.domain.UploadError
+import br.gohan.videofeed.core.error.Result
+import br.gohan.videofeed.upload.domain.UploadError
+import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
-import io.ktor.http.ContentType
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
 class KtorUploadDataSourceTest {
 
-    private fun buildDataSource(engine: MockEngine): KtorUploadDataSource {
-        val client = buildTestHttpClient(engine) // same helper used in Phase 2/3 tests
-        return KtorUploadDataSource(client, "http://localhost")
+    private fun mockClient(status: HttpStatusCode, body: String): HttpClient {
+        val engine = MockEngine { respond(body, status, headersOf(HttpHeaders.ContentType, "application/json")) }
+        return HttpClient(engine) { install(ContentNegotiation) { json() } }
     }
 
     @Test
     fun `presign returns PresignResult on 200`() = runTest {
-        val engine = MockEngine { _ ->
-            respond(
-                content = """{"uploadUrl":"https://r2.example.com/upload","videoKey":"videos/abc.mp4"}""",
-                status = HttpStatusCode.OK,
-                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            )
-        }
-        val result = buildDataSource(engine).presign("test.mp4")
+        val client = mockClient(
+            HttpStatusCode.OK,
+            """{"uploadUrl":"https://r2.example.com/upload","videoKey":"videos/abc.mp4"}"""
+        )
+        val result = KtorUploadDataSource(client, "http://localhost").presign("test.mp4")
         assertIs<Result.Success<*>>(result)
-        assertEquals("https://r2.example.com/upload", result.data.uploadUrl)
-        assertEquals("videos/abc.mp4", result.data.videoKey)
     }
 
     @Test
     fun `presign returns UploadError_Presign on 500`() = runTest {
-        val engine = MockEngine { _ ->
-            respond(content = "", status = HttpStatusCode.InternalServerError)
-        }
-        val result = buildDataSource(engine).presign("test.mp4")
+        val client = mockClient(HttpStatusCode.InternalServerError, "")
+        val result = KtorUploadDataSource(client, "http://localhost").presign("test.mp4")
         assertIs<Result.Error<*>>(result)
         assertIs<UploadError.Presign>(result.error)
     }
 
     @Test
     fun `registerVideo returns success on 201`() = runTest {
-        val engine = MockEngine { _ ->
-            respond(
-                content = """{"id":"1","title":"My Video","cdnUrl":"https://cdn/v.mp4","thumbnailUrl":null}""",
-                status = HttpStatusCode.Created,
-                headers = headersOf(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-            )
-        }
-        val result = buildDataSource(engine).registerVideo("videos/abc.mp4", "My Video")
+        val client = mockClient(
+            HttpStatusCode.Created,
+            """{"id":"1","title":"My Video","cdnUrl":"https://cdn/v.mp4","thumbnailUrl":null}"""
+        )
+        val result = KtorUploadDataSource(client, "http://localhost").registerVideo("videos/abc.mp4", "My Video")
         assertIs<Result.Success<*>>(result)
     }
 
     @Test
     fun `registerVideo returns UploadError_Register on 401`() = runTest {
-        val engine = MockEngine { _ ->
-            respond(content = "", status = HttpStatusCode.Unauthorized)
-        }
-        val result = buildDataSource(engine).registerVideo("videos/abc.mp4", "My Video")
+        val client = mockClient(HttpStatusCode.Unauthorized, "")
+        val result = KtorUploadDataSource(client, "http://localhost").registerVideo("videos/abc.mp4", "My Video")
         assertIs<Result.Error<*>>(result)
         assertIs<UploadError.Register>(result.error)
     }
 }
 ```
 
-- [ ] **Step 4: Run failing tests**
+- [ ] **Step 4: Run tests**
 
-Run: `./gradlew :feature:upload:data:testDebugUnitTest --tests "*.KtorUploadDataSourceTest" -i`
-Expected: FAIL — `KtorUploadDataSource` not yet compiling (missing `safeCall` wiring details are already in place from Phase 1).
-
-- [ ] **Step 5: Run tests to verify they pass**
-
-Run: `./gradlew :feature:upload:data:testDebugUnitTest --tests "*.KtorUploadDataSourceTest"`
+Run: `./gradlew :shared:testDebugUnitTest --tests "*.KtorUploadDataSourceTest"`
 Expected: PASS (4 tests)
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add feature/upload/data/src/commonMain/ feature/upload/data/src/commonTest/kotlin/br/gohan/videofeed/feature/upload/data/KtorUploadDataSourceTest.kt
+git add shared/src/commonMain/kotlin/br/gohan/videofeed/upload/data/ shared/src/commonTest/kotlin/br/gohan/videofeed/upload/data/KtorUploadDataSourceTest.kt
 git commit -m "feat(upload): add KtorUploadDataSource with presign and register"
 ```
 
@@ -308,18 +285,18 @@ git commit -m "feat(upload): add KtorUploadDataSource with presign and register"
 ## Task 3: `KtorR2UploadDataSource`
 
 **Files:**
-- Create: `feature/upload/data/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/data/KtorR2UploadDataSource.kt`
-- Create: `feature/upload/data/src/commonTest/kotlin/br/gohan/videofeed/feature/upload/data/KtorR2UploadDataSourceTest.kt`
+- Create: `shared/src/commonMain/kotlin/br/gohan/videofeed/upload/data/KtorR2UploadDataSource.kt`
+- Create: `shared/src/commonTest/kotlin/br/gohan/videofeed/upload/data/KtorR2UploadDataSourceTest.kt`
 
 R2 upload uses a **separate plain `HttpClient`** with no bearer auth headers — the presigned URL contains all the auth the request needs.
 
-- [ ] **Step 1: Write the failing test**
+- [ ] **Step 1: Write the tests**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.data
+package br.gohan.videofeed.upload.data
 
-import br.gohan.videofeed.core.domain.Result
-import br.gohan.videofeed.feature.upload.domain.UploadError
+import br.gohan.videofeed.core.error.Result
+import br.gohan.videofeed.upload.domain.UploadError
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
@@ -332,17 +309,10 @@ import kotlin.test.assertTrue
 
 class KtorR2UploadDataSourceTest {
 
-    private fun buildDataSource(engine: MockEngine): KtorR2UploadDataSource {
-        val client = HttpClient(engine)
-        return KtorR2UploadDataSource(client)
-    }
-
     @Test
     fun `upload emits 1_0 success on 200`() = runTest {
-        val engine = MockEngine { _ ->
-            respond(content = "", status = HttpStatusCode.OK)
-        }
-        val results = buildDataSource(engine)
+        val engine = MockEngine { respond(content = "", status = HttpStatusCode.OK) }
+        val results = KtorR2UploadDataSource(HttpClient(engine))
             .upload("https://r2.example.com/upload", ByteArray(100), "video/mp4")
             .toList()
         val last = results.last()
@@ -352,10 +322,8 @@ class KtorR2UploadDataSourceTest {
 
     @Test
     fun `upload emits UploadError_Upload on non-2xx`() = runTest {
-        val engine = MockEngine { _ ->
-            respond(content = "", status = HttpStatusCode.Forbidden)
-        }
-        val results = buildDataSource(engine)
+        val engine = MockEngine { respond(content = "", status = HttpStatusCode.Forbidden) }
+        val results = KtorR2UploadDataSource(HttpClient(engine))
             .upload("https://r2.example.com/upload", ByteArray(100), "video/mp4")
             .toList()
         val last = results.last()
@@ -365,31 +333,25 @@ class KtorR2UploadDataSourceTest {
 }
 ```
 
-- [ ] **Step 2: Run the failing test**
-
-Run: `./gradlew :feature:upload:data:testDebugUnitTest --tests "*.KtorR2UploadDataSourceTest"`
-Expected: FAIL — class does not exist yet
-
-- [ ] **Step 3: Implement `KtorR2UploadDataSource.kt`**
+- [ ] **Step 2: Implement `KtorR2UploadDataSource.kt`**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.data
+package br.gohan.videofeed.upload.data
 
-import br.gohan.videofeed.core.domain.Result
-import br.gohan.videofeed.feature.upload.domain.R2UploadDataSource
-import br.gohan.videofeed.feature.upload.domain.UploadError
+import br.gohan.videofeed.core.error.Result
+import br.gohan.videofeed.upload.domain.R2UploadDataSource
+import br.gohan.videofeed.upload.domain.UploadError
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.onUpload
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
-import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpStatusCode
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.channels.trySendBlocking
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 
 class KtorR2UploadDataSource(
     private val httpClient: HttpClient
@@ -420,21 +382,21 @@ class KtorR2UploadDataSource(
         } catch (e: Exception) {
             trySendBlocking(Result.Error(UploadError.Upload))
         }
-        awaitClose()
         close()
+        awaitClose()
     }
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [ ] **Step 3: Run tests**
 
-Run: `./gradlew :feature:upload:data:testDebugUnitTest --tests "*.KtorR2UploadDataSourceTest"`
+Run: `./gradlew :shared:testDebugUnitTest --tests "*.KtorR2UploadDataSourceTest"`
 Expected: PASS (2 tests)
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add feature/upload/data/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/data/KtorR2UploadDataSource.kt feature/upload/data/src/commonTest/kotlin/br/gohan/videofeed/feature/upload/data/KtorR2UploadDataSourceTest.kt
+git add shared/src/commonMain/kotlin/br/gohan/videofeed/upload/data/KtorR2UploadDataSource.kt shared/src/commonTest/kotlin/br/gohan/videofeed/upload/data/KtorR2UploadDataSourceTest.kt
 git commit -m "feat(upload): add KtorR2UploadDataSource with progress flow"
 ```
 
@@ -443,20 +405,23 @@ git commit -m "feat(upload): add KtorR2UploadDataSource with progress flow"
 ## Task 4: Koin Module for Upload Data
 
 **Files:**
-- Create: `feature/upload/data/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/data/uploadDataModule.kt`
+- Create: `shared/src/commonMain/kotlin/br/gohan/videofeed/upload/data/uploadDataModule.kt`
+
+The R2 data source gets a **plain** `HttpClient` (no bearer plugin) identified by Koin qualifier `"plain"`.
 
 - [ ] **Step 1: Create `uploadDataModule.kt`**
 
-The R2 data source gets a **plain** `HttpClient` (no bearer plugin) identified by Koin qualifier `"plain"`. The plain client must also be declared here since it is only needed by this module.
-
 ```kotlin
-package br.gohan.videofeed.feature.upload.data
+package br.gohan.videofeed.upload.data
 
+import br.gohan.videofeed.upload.domain.R2UploadDataSource
+import br.gohan.videofeed.upload.domain.UploadRemoteDataSource
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 import org.koin.core.qualifier.named
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val uploadDataModule = module {
@@ -469,7 +434,7 @@ val uploadDataModule = module {
     }
     single {
         KtorUploadDataSource(
-            httpClient = get(),                // authenticated client from core:data
+            httpClient = get(),
             baseUrl = getProperty("baseUrl")
         )
     } bind UploadRemoteDataSource::class
@@ -480,15 +445,15 @@ val uploadDataModule = module {
 }
 ```
 
-- [ ] **Step 2: Verify module compiles**
+- [ ] **Step 2: Verify the module compiles**
 
-Run: `./gradlew :feature:upload:data:compileCommonMainKotlinMetadata`
+Run: `./gradlew :shared:compileCommonMainKotlinMetadata`
 Expected: BUILD SUCCESSFUL
 
 - [ ] **Step 3: Commit**
 
 ```bash
-git add feature/upload/data/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/data/uploadDataModule.kt
+git add shared/src/commonMain/kotlin/br/gohan/videofeed/upload/data/uploadDataModule.kt
 git commit -m "feat(upload): add Koin upload data module"
 ```
 
@@ -497,31 +462,61 @@ git commit -m "feat(upload): add Koin upload data module"
 ## Task 5: `UploadViewModel`
 
 **Files:**
-- Create: `feature/upload/presentation/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/presentation/UploadViewModel.kt`
-- Create: `feature/upload/presentation/src/commonTest/kotlin/br/gohan/videofeed/feature/upload/presentation/UploadViewModelTest.kt`
+- Create: `shared/src/commonMain/kotlin/br/gohan/videofeed/upload/presenter/UploadContract.kt`
+- Create: `shared/src/commonMain/kotlin/br/gohan/videofeed/upload/presenter/UploadViewModel.kt`
+- Create: `shared/src/commonTest/kotlin/br/gohan/videofeed/upload/presenter/FakeUploadDataSources.kt`
+- Create: `shared/src/commonTest/kotlin/br/gohan/videofeed/upload/presenter/UploadViewModelTest.kt`
 
-- [ ] **Step 1: Write the failing tests**
+- [ ] **Step 1: Create `UploadContract.kt`**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.presentation
+package br.gohan.videofeed.upload.presenter
 
-import app.cash.turbine.test
-import assertk.assertThat
-import assertk.assertions.isEqualTo
-import assertk.assertions.isInstanceOf
-import br.gohan.videofeed.core.domain.EmptyResult
-import br.gohan.videofeed.core.domain.Result
-import br.gohan.videofeed.feature.upload.domain.PresignResult
-import br.gohan.videofeed.feature.upload.domain.R2UploadDataSource
-import br.gohan.videofeed.feature.upload.domain.UploadError
-import br.gohan.videofeed.feature.upload.domain.UploadRemoteDataSource
+data class UploadState(
+    val title: String = "",
+    val selectedFilename: String? = null,
+    val status: UploadStatus = UploadStatus.Idle
+)
+
+sealed interface UploadStatus {
+    data object Idle : UploadStatus
+    data object Presigning : UploadStatus
+    data class Uploading(val progress: Float) : UploadStatus
+    data object Finalizing : UploadStatus
+    data object Done : UploadStatus
+    data class Error(val message: String) : UploadStatus
+}
+
+sealed interface UploadAction {
+    data class OnFileSelected(
+        val bytes: ByteArray,
+        val filename: String,
+        val mimeType: String
+    ) : UploadAction
+    data class OnTitleChange(val title: String) : UploadAction
+    data object OnSubmit : UploadAction
+}
+
+sealed interface UploadEvent {
+    data object NavigateToFeed : UploadEvent
+}
+```
+
+- [ ] **Step 2: Write fakes**
+
+```kotlin
+package br.gohan.videofeed.upload.presenter
+
+import br.gohan.videofeed.core.error.EmptyResult
+import br.gohan.videofeed.core.error.Result
+import br.gohan.videofeed.upload.domain.PresignResult
+import br.gohan.videofeed.upload.domain.R2UploadDataSource
+import br.gohan.videofeed.upload.domain.UploadError
+import br.gohan.videofeed.upload.domain.UploadRemoteDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.runTest
-import kotlin.test.Test
 
-private class FakeUploadRemoteDataSource(
+class FakeUploadRemoteDataSource(
     private val presignResult: Result<PresignResult, UploadError> = Result.Success(
         PresignResult("https://r2.example.com/upload", "videos/abc.mp4")
     ),
@@ -531,7 +526,7 @@ private class FakeUploadRemoteDataSource(
     override suspend fun registerVideo(videoKey: String, title: String) = registerResult
 }
 
-private class FakeR2UploadDataSource(
+class FakeR2UploadDataSource(
     private val emissions: List<Result<Float, UploadError>> = listOf(
         Result.Success(0.5f),
         Result.Success(1.0f)
@@ -540,14 +535,45 @@ private class FakeR2UploadDataSource(
     override fun upload(uploadUrl: String, bytes: ByteArray, mimeType: String): Flow<Result<Float, UploadError>> =
         flowOf(*emissions.toTypedArray())
 }
+```
+
+- [ ] **Step 3: Write tests**
+
+```kotlin
+package br.gohan.videofeed.upload.presenter
+
+import app.cash.turbine.test
+import assertk.assertThat
+import assertk.assertions.isEqualTo
+import assertk.assertions.isInstanceOf
+import br.gohan.videofeed.core.error.Result
+import br.gohan.videofeed.upload.domain.UploadError
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.setMain
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
 
 class UploadViewModelTest {
 
     private val dispatcher = UnconfinedTestDispatcher()
 
+    @BeforeTest
+    fun setup() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @AfterTest
+    fun teardown() {
+        Dispatchers.resetMain()
+    }
+
     private fun buildViewModel(
-        remoteDataSource: UploadRemoteDataSource = FakeUploadRemoteDataSource(),
-        r2DataSource: R2UploadDataSource = FakeR2UploadDataSource()
+        remoteDataSource: FakeUploadRemoteDataSource = FakeUploadRemoteDataSource(),
+        r2DataSource: FakeR2UploadDataSource = FakeR2UploadDataSource()
     ) = UploadViewModel(remoteDataSource, r2DataSource, dispatcher)
 
     @Test
@@ -588,32 +614,6 @@ class UploadViewModelTest {
     }
 
     @Test
-    fun `OnSubmit transitions through Presigning then Uploading then Finalizing`() = runTest(dispatcher) {
-        // Use a deferred R2 source to observe intermediate states
-        val r2 = FakeR2UploadDataSource(listOf(Result.Success(0.5f), Result.Success(1.0f)))
-        val vm = buildViewModel(r2DataSource = r2)
-        vm.onAction(UploadAction.OnFileSelected(ByteArray(10), "clip.mp4", "video/mp4"))
-        vm.onAction(UploadAction.OnTitleChange("My Video"))
-
-        vm.state.test {
-            awaitItem() // initial Idle
-            vm.onAction(UploadAction.OnSubmit)
-            // Presigning
-            assertThat(awaitItem().status).isInstanceOf(UploadStatus.Presigning::class)
-            // Uploading(0.5)
-            val uploading = awaitItem().status
-            assertThat(uploading).isInstanceOf(UploadStatus.Uploading::class)
-            // Uploading(1.0)
-            awaitItem()
-            // Finalizing
-            assertThat(awaitItem().status).isInstanceOf(UploadStatus.Finalizing::class)
-            // Done
-            assertThat(awaitItem().status).isInstanceOf(UploadStatus.Done::class)
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
     fun `OnSubmit sets Error state when presign fails`() = runTest(dispatcher) {
         val vm = buildViewModel(
             remoteDataSource = FakeUploadRemoteDataSource(presignResult = Result.Error(UploadError.Presign))
@@ -637,20 +637,14 @@ class UploadViewModelTest {
 }
 ```
 
-- [ ] **Step 2: Run the failing tests**
-
-Run: `./gradlew :feature:upload:presentation:testDebugUnitTest --tests "*.UploadViewModelTest"`
-Expected: FAIL — `UploadViewModel` does not exist
-
-- [ ] **Step 3: Implement `UploadViewModel.kt`**
+- [ ] **Step 4: Implement `UploadViewModel.kt`**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.presentation
+package br.gohan.videofeed.upload.presenter
 
-import br.gohan.videofeed.core.domain.Result
-import br.gohan.videofeed.feature.upload.domain.R2UploadDataSource
-import br.gohan.videofeed.feature.upload.domain.UploadError
-import br.gohan.videofeed.feature.upload.domain.UploadRemoteDataSource
+import br.gohan.videofeed.core.error.Result
+import br.gohan.videofeed.upload.domain.R2UploadDataSource
+import br.gohan.videofeed.upload.domain.UploadRemoteDataSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -659,35 +653,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-data class UploadState(
-    val title: String = "",
-    val selectedFilename: String? = null,
-    val status: UploadStatus = UploadStatus.Idle
-)
-
-sealed interface UploadStatus {
-    data object Idle : UploadStatus
-    data object Presigning : UploadStatus
-    data class Uploading(val progress: Float) : UploadStatus
-    data object Finalizing : UploadStatus
-    data object Done : UploadStatus
-    data class Error(val message: String) : UploadStatus
-}
-
-sealed interface UploadAction {
-    data class OnFileSelected(
-        val bytes: ByteArray,
-        val filename: String,
-        val mimeType: String
-    ) : UploadAction
-    data class OnTitleChange(val title: String) : UploadAction
-    data object OnSubmit : UploadAction
-}
-
-sealed interface UploadEvent {
-    data object NavigateToFeed : UploadEvent
-}
 
 class UploadViewModel(
     private val remoteDataSource: UploadRemoteDataSource,
@@ -700,7 +665,6 @@ class UploadViewModel(
     private val _events = Channel<UploadEvent>()
     val events = _events.receiveAsFlow()
 
-    // Not exposed in state — only used during upload
     private var selectedBytes: ByteArray? = null
     private var selectedMimeType: String = "video/mp4"
 
@@ -711,9 +675,7 @@ class UploadViewModel(
                 selectedMimeType = action.mimeType
                 _state.update { it.copy(selectedFilename = action.filename) }
             }
-            is UploadAction.OnTitleChange -> {
-                _state.update { it.copy(title = action.title) }
-            }
+            is UploadAction.OnTitleChange -> _state.update { it.copy(title = action.title) }
             is UploadAction.OnSubmit -> upload()
         }
     }
@@ -725,7 +687,6 @@ class UploadViewModel(
         if (title.isBlank()) return
 
         coroutineScope.launch {
-            // Step 1: Presign
             _state.update { it.copy(status = UploadStatus.Presigning) }
             val presignResult = remoteDataSource.presign(filename)
             if (presignResult is Result.Error) {
@@ -734,12 +695,9 @@ class UploadViewModel(
             }
             val presign = (presignResult as Result.Success).data
 
-            // Step 2: Upload directly to R2
             r2DataSource.upload(presign.uploadUrl, bytes, selectedMimeType).collect { result ->
                 when (result) {
-                    is Result.Success -> _state.update {
-                        it.copy(status = UploadStatus.Uploading(result.data))
-                    }
+                    is Result.Success -> _state.update { it.copy(status = UploadStatus.Uploading(result.data)) }
                     is Result.Error -> {
                         _state.update { it.copy(status = UploadStatus.Error("Upload failed")) }
                         return@collect
@@ -748,7 +706,6 @@ class UploadViewModel(
             }
             if (_state.value.status is UploadStatus.Error) return@launch
 
-            // Step 3: Register metadata
             _state.update { it.copy(status = UploadStatus.Finalizing) }
             val registerResult = remoteDataSource.registerVideo(presign.videoKey, title)
             if (registerResult is Result.Error) {
@@ -763,60 +720,87 @@ class UploadViewModel(
 }
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [ ] **Step 5: Run tests**
 
-Run: `./gradlew :feature:upload:presentation:testDebugUnitTest --tests "*.UploadViewModelTest"`
-Expected: PASS (6 tests)
+Run: `./gradlew :shared:testDebugUnitTest --tests "*.UploadViewModelTest"`
+Expected: PASS (5 tests)
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
-git add feature/upload/presentation/src/
+git add shared/src/commonMain/kotlin/br/gohan/videofeed/upload/presenter/ shared/src/commonTest/kotlin/br/gohan/videofeed/upload/presenter/
 git commit -m "feat(upload): add UploadViewModel with three-step upload flow"
 ```
 
 ---
 
-## Task 6: Koin Module for Upload Presentation + App Wiring
+## Task 6: Koin Wiring in AppModules
 
 **Files:**
-- Create: `feature/upload/presentation/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/presentation/uploadPresentationModule.kt`
 - Modify: `composeApp/src/androidMain/kotlin/br/gohan/videofeed/di/AppModules.kt`
 
-- [ ] **Step 1: Create `uploadPresentationModule.kt`**
+`viewModelOf` is Android-specific so `UploadViewModel` registration lives here, not in shared.
+
+- [ ] **Step 1: Update `AppModules.kt`**
 
 ```kotlin
-package br.gohan.videofeed.feature.upload.presentation
+package br.gohan.videofeed.di
 
-import br.gohan.videofeed.feature.upload.domain.R2UploadDataSource
-import br.gohan.videofeed.feature.upload.domain.UploadRemoteDataSource
+import androidx.media3.common.util.UnstableApi
+import br.gohan.videofeed.auth.data.DataStoreTokenStorage
+import br.gohan.videofeed.auth.data.TokenStorage
+import br.gohan.videofeed.auth.data.authDataModule
+import br.gohan.videofeed.auth.presenter.LoginViewModel
+import br.gohan.videofeed.auth.presenter.RegisterViewModel
+import br.gohan.videofeed.core.network.HttpClientFactory
+import br.gohan.videofeed.feed.data.feedDataModule
+import br.gohan.videofeed.feed.presenter.FeedViewModel
+import br.gohan.videofeed.upload.data.uploadDataModule
+import br.gohan.videofeed.upload.presenter.UploadViewModel
+import io.ktor.client.engine.android.Android
+import org.koin.android.ext.koin.androidContext
 import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
-val uploadPresentationModule = module {
+val coreAndroidModule = module {
+    single<TokenStorage> { DataStoreTokenStorage(androidContext()) }
+    single { HttpClientFactory.create(Android.create(), get()) }
+}
+
+val authPresentationModule = module {
+    viewModelOf(::LoginViewModel)
+    viewModelOf(::RegisterViewModel)
+}
+
+val feedPresentationAndroidModule = module {
+    viewModelOf(::FeedViewModel)
+}
+
+val uploadPresentationAndroidModule = module {
     viewModelOf(::UploadViewModel)
 }
+
+@UnstableApi
+val appModules = listOf(
+    coreAndroidModule,
+    authDataModule,
+    authPresentationModule,
+    feedDataModule,
+    feedPresentationAndroidModule,
+    uploadDataModule,
+    uploadPresentationAndroidModule
+)
 ```
 
-- [ ] **Step 2: Update `AppModules.kt`**
-
-Add `uploadDataModule` and `uploadPresentationModule` to the modules list. The existing file already imports `authDataModule`, `authPresentationModule`, `feedDataModule`, `feedPresentationModule` — append after them:
-
-```kotlin
-// in the modules list passed to startKoin:
-uploadDataModule,
-uploadPresentationModule,
-```
-
-- [ ] **Step 3: Verify the app compiles**
+- [ ] **Step 2: Verify the app compiles**
 
 Run: `./gradlew :composeApp:assembleDebug`
 Expected: BUILD SUCCESSFUL
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add feature/upload/presentation/src/commonMain/kotlin/br/gohan/videofeed/feature/upload/presentation/uploadPresentationModule.kt composeApp/src/androidMain/kotlin/br/gohan/videofeed/di/AppModules.kt
+git add composeApp/src/androidMain/kotlin/br/gohan/videofeed/di/AppModules.kt
 git commit -m "feat(upload): wire upload modules into Koin"
 ```
 
@@ -826,8 +810,6 @@ git commit -m "feat(upload): wire upload modules into Koin"
 
 **Files:**
 - Create: `composeApp/src/androidMain/kotlin/br/gohan/videofeed/upload/UriHelpers.kt`
-
-These helpers are called from the Compose screen to convert the selected `Uri` into the raw bytes and metadata the ViewModel needs.
 
 - [ ] **Step 1: Create `UriHelpers.kt`**
 
@@ -870,14 +852,7 @@ git commit -m "feat(upload): add URI helpers for file reading on Android"
 **Files:**
 - Create: `composeApp/src/androidMain/kotlin/br/gohan/videofeed/upload/UploadScreen.kt`
 
-The screen has three logical sections:
-1. File picker button + selected filename label
-2. Title text field
-3. Submit button (disabled while loading or form incomplete)
-4. Progress indicator (visible only in `Uploading` status)
-5. Error text (visible only in `Error` status)
-
-- [ ] **Step 1: Write `UploadScreen.kt`**
+- [ ] **Step 1: Create `UploadScreen.kt`**
 
 ```kotlin
 package br.gohan.videofeed.upload
@@ -906,11 +881,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import br.gohan.videofeed.feature.upload.presentation.UploadAction
-import br.gohan.videofeed.feature.upload.presentation.UploadEvent
-import br.gohan.videofeed.feature.upload.presentation.UploadStatus
-import br.gohan.videofeed.feature.upload.presentation.UploadViewModel
-import br.gohan.videofeed.navigation.ObserveAsEvents
+import br.gohan.videofeed.auth.ObserveAsEvents
+import br.gohan.videofeed.upload.presenter.UploadAction
+import br.gohan.videofeed.upload.presenter.UploadEvent
+import br.gohan.videofeed.upload.presenter.UploadState
+import br.gohan.videofeed.upload.presenter.UploadStatus
+import br.gohan.videofeed.upload.presenter.UploadViewModel
 import org.koin.androidx.compose.koinViewModel
 
 @Composable
@@ -926,15 +902,12 @@ fun UploadRoot(
         }
     }
 
-    UploadScreen(
-        state = state,
-        onAction = viewModel::onAction
-    )
+    UploadScreen(state = state, onAction = viewModel::onAction)
 }
 
 @Composable
 fun UploadScreen(
-    state: br.gohan.videofeed.feature.upload.presentation.UploadState,
+    state: UploadState,
     onAction: (UploadAction) -> Unit
 ) {
     val context = LocalContext.current
@@ -953,9 +926,7 @@ fun UploadScreen(
     val isLoading = state.status is UploadStatus.Presigning
         || state.status is UploadStatus.Uploading
         || state.status is UploadStatus.Finalizing
-    val canSubmit = !isLoading
-        && state.selectedFilename != null
-        && state.title.isNotBlank()
+    val canSubmit = !isLoading && state.selectedFilename != null && state.title.isNotBlank()
 
     Scaffold { padding ->
         Column(
@@ -975,10 +946,7 @@ fun UploadScreen(
 
             if (state.selectedFilename != null) {
                 Spacer(Modifier.height(8.dp))
-                Text(
-                    text = state.selectedFilename,
-                    style = MaterialTheme.typography.bodySmall
-                )
+                Text(text = state.selectedFilename, style = MaterialTheme.typography.bodySmall)
             }
 
             Spacer(Modifier.height(16.dp))
@@ -1012,15 +980,11 @@ fun UploadScreen(
                     Spacer(Modifier.height(8.dp))
                     Text("Saving…")
                 }
-                is UploadStatus.Error -> {
-                    Text(
-                        text = status.message,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                }
-                is UploadStatus.Done -> {
-                    Text("Upload complete!")
-                }
+                is UploadStatus.Error -> Text(
+                    text = status.message,
+                    color = MaterialTheme.colorScheme.error
+                )
+                is UploadStatus.Done -> Text("Upload complete!")
                 else -> Unit
             }
 
@@ -1057,6 +1021,8 @@ git commit -m "feat(upload): add Android upload screen with file picker and prog
 - Create: `composeApp/src/androidMain/kotlin/br/gohan/videofeed/navigation/UploadNavGraph.kt`
 - Modify: `composeApp/src/androidMain/kotlin/br/gohan/videofeed/navigation/AppNavHost.kt`
 
+`UploadRoute` is already declared in `AppRoutes.kt`. `AppNavHost.kt` already calls `navController.navigate(UploadRoute)` from the feed graph and has a `// uploadGraph() added in Phase 4` comment — just uncomment/add the call.
+
 - [ ] **Step 1: Create `UploadNavGraph.kt`**
 
 ```kotlin
@@ -1066,10 +1032,6 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import br.gohan.videofeed.upload.UploadRoot
-import kotlinx.serialization.Serializable
-
-@Serializable
-object UploadRoute
 
 fun NavGraphBuilder.uploadGraph(navController: NavHostController) {
     composable<UploadRoute> {
@@ -1086,29 +1048,21 @@ fun NavGraphBuilder.uploadGraph(navController: NavHostController) {
 
 - [ ] **Step 2: Update `AppNavHost.kt`**
 
-Add `uploadGraph(navController)` inside the `NavHost` block, alongside `authGraph` and `feedGraph`. The feed screen also needs an upload button that navigates to `UploadRoute` — update `feedGraph` to accept an `onNavigateToUpload` lambda and pass `navController.navigate(UploadRoute)`.
-
-In `AppNavHost.kt`, update the `feedGraph` call:
+Replace the `// uploadGraph() added in Phase 4` comment with:
 
 ```kotlin
-feedGraph(
-    navController = navController,
-    onNavigateToUpload = { navController.navigate(UploadRoute) }
-)
 uploadGraph(navController)
 ```
-
-In `FeedNavGraph.kt`, update the `feedGraph` signature to include `onNavigateToUpload: () -> Unit` and pass it as `onUploadClick` to `FeedRoot`.
 
 - [ ] **Step 3: Compile and launch on emulator**
 
 Run: `./gradlew :composeApp:assembleDebug && adb install -r composeApp/build/outputs/apk/debug/composeApp-debug.apk`
-Expected: BUILD SUCCESSFUL. App launches, feed screen shows an Upload button in the top bar, tapping it opens the upload screen, selecting a video and entering a title enables the Upload button.
+Expected: BUILD SUCCESSFUL. App launches, feed screen shows an Upload button, tapping it opens the upload screen, selecting a video + entering a title enables the Upload button.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add composeApp/src/androidMain/kotlin/br/gohan/videofeed/navigation/UploadNavGraph.kt composeApp/src/androidMain/kotlin/br/gohan/videofeed/navigation/AppNavHost.kt composeApp/src/androidMain/kotlin/br/gohan/videofeed/navigation/FeedNavGraph.kt
+git add composeApp/src/androidMain/kotlin/br/gohan/videofeed/navigation/UploadNavGraph.kt composeApp/src/androidMain/kotlin/br/gohan/videofeed/navigation/AppNavHost.kt
 git commit -m "feat(upload): wire upload screen into navigation graph"
 ```
 
@@ -1124,13 +1078,17 @@ git commit -m "feat(upload): wire upload screen into navigation graph"
 - `UploadAction: OnFileSelected, OnTitleChange, OnSubmit` ✓
 - `UploadEvent: NavigateToFeed` ✓
 - Android file picker + progress bar ✓
-- JWT required for upload (handled by `HttpClientFactory` bearer plugin already set up in Phase 1) ✓
-- Plain `HttpClient` for R2 (no bearer headers on R2 presigned URL) ✓
+- JWT required for upload (handled by `HttpClientFactory` bearer plugin from Phase 1) ✓
+- Plain `HttpClient` for R2 (no bearer headers on presigned URL) ✓
 
-**Placeholder scan:** No TBDs, no "implement later", all steps have actual code.
-
-**Type consistency:**
-- `PresignResult` defined in Task 1, used in Task 2 (`KtorUploadDataSource`) and Task 5 (`UploadViewModel`) ✓
-- `UploadStatus` sealed interface defined in Task 5 `UploadViewModel.kt`, referenced in `UploadScreen.kt` (Task 8) ✓
-- `UploadAction.OnFileSelected` has `(bytes, filename, mimeType)` in both `UploadViewModel.kt` and `UploadScreen.kt` ✓
-- `FeedRoute` referenced in `UploadNavGraph.kt` — must be the same object declared in `FeedNavGraph.kt` (defined in Phase 3) ✓
+**Path corrections applied:**
+- All `feature/upload/{domain,data,presentation}/src/commonMain/...` → `shared/src/commonMain/kotlin/br/gohan/videofeed/upload/{domain,data,presenter}/`
+- Package names: `br.gohan.videofeed.feature.upload.*` → `br.gohan.videofeed.upload.*`
+- `presenter` (not `presentation`) to match existing convention
+- Core imports: `core.domain.*` → `core.error.*`, `core.network.*`
+- `safeCall` wrapper replaced by direct `httpClient.post()` with `when` on Result
+- `uploadPresentationModule` moved into `AppModules.kt` (Android-only, `viewModelOf`)
+- Gradle tasks: `:feature:upload:*:testDebugUnitTest` → `:shared:testDebugUnitTest`
+- `UploadRoute` already exists in `AppRoutes.kt` — no change needed
+- `ObserveAsEvents` import: `br.gohan.videofeed.auth.ObserveAsEvents`
+- `AppNavHost.kt` already has `UploadRoute` nav call — Task 9 just adds `uploadGraph(navController)`

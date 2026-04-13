@@ -1,19 +1,37 @@
 package br.gohan.videofeed.feed
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -119,15 +137,26 @@ fun FeedScreen(
         }
     }
 
-    VerticalPager(
-        state = pagerState,
-        modifier = Modifier.fillMaxSize()
-    ) { page ->
-        VideoPageItem(
-            video = state.videos[page],
-            isCurrentPage = pagerState.currentPage == page,
-            exoPlayer = exoPlayer
-        )
+    Box(modifier = Modifier.fillMaxSize()) {
+        VerticalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxSize()
+        ) { page ->
+            VideoPageItem(
+                video = state.videos[page],
+                isCurrentPage = pagerState.currentPage == page,
+                exoPlayer = exoPlayer
+            )
+        }
+
+        FloatingActionButton(
+            onClick = { onAction(FeedAction.OnUploadClick) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Text("+")
+        }
     }
 }
 
@@ -138,7 +167,35 @@ private fun VideoPageItem(
     isCurrentPage: Boolean,
     exoPlayer: ExoPlayer
 ) {
-    Box(modifier = Modifier.fillMaxSize()) {
+    var isPlaying by remember { mutableStateOf(true) }
+    var showIcon by remember { mutableStateOf(false) }
+
+    LaunchedEffect(showIcon) {
+        if (showIcon) {
+            delay(800)
+            showIcon = false
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) {
+                if (isCurrentPage) {
+                    if (exoPlayer.isPlaying) {
+                        exoPlayer.pause()
+                        isPlaying = false
+                    } else {
+                        exoPlayer.play()
+                        isPlaying = true
+                    }
+                    showIcon = true
+                }
+            }
+    ) {
         if (isCurrentPage) {
             VideoPlayerView(
                 exoPlayer = exoPlayer,
@@ -152,6 +209,30 @@ private fun VideoPageItem(
                 contentScale = ContentScale.Crop
             )
         }
+
+        AnimatedVisibility(
+            visible = showIcon,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = Color.Black.copy(alpha = 0.5f),
+                modifier = Modifier.size(72.dp)
+            ) {
+                Text(
+                    text = if (isPlaying) "▶" else "⏸",
+                    color = Color.White,
+                    fontSize = 28.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(top = 20.dp)
+                )
+            }
+        }
+
         VideoInfoOverlay(
             video = video,
             modifier = Modifier.align(Alignment.BottomStart)
