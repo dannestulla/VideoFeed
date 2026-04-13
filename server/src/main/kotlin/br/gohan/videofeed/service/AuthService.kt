@@ -11,6 +11,8 @@ import java.time.Instant
 
 class AuthService {
 
+    /** Hashes the password (never stores plain text) and saves the user row, then returns a JWT token.
+     * The JWT token is what the Android app attaches to every authenticated request (like a session cookie). */
     fun register(email: String, password: String): AuthResponse {
         val hash = BCrypt.hashpw(password, BCrypt.gensalt())
         val userId = transaction {
@@ -23,6 +25,7 @@ class AuthService {
         return AuthResponse(JwtConfig.generateToken(userId.toString()))
     }
 
+    /** Looks up the user by email, checks the hashed password, and returns a JWT token on success. */
     fun login(email: String, password: String): AuthResponse? {
         val user = transaction {
             UserTable.selectAll()

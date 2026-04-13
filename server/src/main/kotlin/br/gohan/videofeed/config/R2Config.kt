@@ -8,12 +8,12 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import java.net.URI
 
 object R2Config {
-    val bucket: String = System.getenv("R2_BUCKET") ?: "videofeed"
-    val publicUrl: String = System.getenv("R2_PUBLIC_URL") ?: "https://pub-placeholder.r2.dev"
+    val bucket: String = Env.getOrDefault("R2_BUCKET", "videofeed")
+    val publicUrl: String = Env.getOrDefault("R2_PUBLIC_URL", "https://pub-placeholder.r2.dev")
 
-    private val accountId = System.getenv("R2_ACCOUNT_ID") ?: "placeholder"
-    private val accessKey = System.getenv("R2_ACCESS_KEY") ?: "placeholder"
-    private val secretKey = System.getenv("R2_SECRET_KEY") ?: "placeholder"
+    private val accountId = Env.getOrDefault("R2_ACCOUNT_ID", "placeholder")
+    private val accessKey = Env.getOrDefault("R2_ACCESS_KEY", "placeholder")
+    private val secretKey = Env.getOrDefault("R2_SECRET_KEY", "placeholder")
     private val endpoint = URI.create("https://$accountId.r2.cloudflarestorage.com")
 
     private val credentials = StaticCredentialsProvider.create(

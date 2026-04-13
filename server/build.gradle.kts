@@ -34,6 +34,8 @@ dependencies {
     implementation(libs.auth0.jwt)
     // R2 (S3-compatible)
     implementation(libs.awssdk.s3)
+    // Dotenv (local .env file support)
+    implementation(libs.dotenv)
     // Test
     testImplementation(libs.ktor.serverTestHost)
     testImplementation(libs.kotlin.testJunit)

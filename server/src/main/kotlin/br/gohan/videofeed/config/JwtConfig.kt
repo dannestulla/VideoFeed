@@ -5,7 +5,7 @@ import com.auth0.jwt.algorithms.Algorithm
 import java.util.Date
 
 object JwtConfig {
-    private val secret = System.getenv("JWT_SECRET") ?: "dev-secret-change-in-production"
+    private val secret = Env.getOrDefault("JWT_SECRET", "dev-secret-change-in-production")
     private val algorithm = Algorithm.HMAC256(secret)
     const val ISSUER = "videofeed"
     const val AUDIENCE = "videofeed-users"

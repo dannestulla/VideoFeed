@@ -23,12 +23,15 @@ h2 = "2.3.232"
 jbcrypt = "0.4"
 auth0-jwt = "4.5.0"
 awssdk-s3 = "2.31.26"
+dotenv = "6.4.1"
 koin = "4.1.0"
 datastore = "1.1.7"
 kermit = "2.0.5"
 turbine = "1.2.0"
 assertk = "0.28.1"
 navigation = "2.8.9"
+media3 = "1.6.1"
+coil = "3.1.0"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -82,6 +85,8 @@ jbcrypt = { module = "org.mindrot:jbcrypt", version.ref = "jbcrypt" }
 auth0-jwt = { module = "com.auth0:java-jwt", version.ref = "auth0-jwt" }
 # AWS SDK (for Cloudflare R2 — S3-compatible)
 awssdk-s3 = { module = "software.amazon.awssdk:s3", version.ref = "awssdk-s3" }
+# Dotenv (server-side local config)
+dotenv = { module = "io.github.cdimascio:dotenv-kotlin", version.ref = "dotenv" }
 # Koin
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }
 koin-android = { module = "io.insert-koin:koin-android", version.ref = "koin" }
@@ -97,6 +102,14 @@ androidx-lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:life
 navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigation" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines" }
+# Media3
+media3-exoplayer = { module = "androidx.media3:media3-exoplayer", version.ref = "media3" }
+media3-ui = { module = "androidx.media3:media3-ui", version.ref = "media3" }
+media3-datasource = { module = "androidx.media3:media3-datasource", version.ref = "media3" }
+media3-database = { module = "androidx.media3:media3-database", version.ref = "media3" }
+# Coil
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
+coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

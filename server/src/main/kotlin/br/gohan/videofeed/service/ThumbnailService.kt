@@ -10,6 +10,9 @@ import java.util.UUID
 class ThumbnailService {
     private val log = LoggerFactory.getLogger(ThumbnailService::class.java)
 
+    /** Extracts a thumbnail from an uploaded video and stores it in cloud storage.
+     * Shells out to ffmpeg to grab a single frame at the 1-second mark.
+     * If ffmpeg fails for any reason, a placeholder thumbnail is used instead so the feed never shows a broken image. */
     fun extractAndUpload(videoKey: String): String {
         val cdnVideoUrl = "${R2Config.publicUrl}/$videoKey"
         val tmpFile = File.createTempFile("thumbnail-${UUID.randomUUID()}", ".jpg")

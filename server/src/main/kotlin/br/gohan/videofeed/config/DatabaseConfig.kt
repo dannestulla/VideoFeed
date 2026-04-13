@@ -8,10 +8,10 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object DatabaseConfig {
     fun init(
-        url: String = System.getenv("DB_URL") ?: "jdbc:postgresql://localhost:5432/videofeed",
+        url: String = Env.getOrDefault("DB_URL", "jdbc:postgresql://localhost:5432/videofeed"),
         driver: String = "org.postgresql.Driver",
-        user: String = System.getenv("DB_USER") ?: "postgres",
-        password: String = System.getenv("DB_PASSWORD") ?: "postgres"
+        user: String = Env.getOrDefault("DB_USER", "postgres"),
+        password: String = Env.getOrDefault("DB_PASSWORD", "postgres")
     ) {
         Database.connect(url = url, driver = driver, user = user, password = password)
         transaction {
