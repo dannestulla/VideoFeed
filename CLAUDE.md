@@ -15,20 +15,16 @@ Every screen has exactly **2 files**:
 
 ```
 presenter/<feature>/<screen>/
-  <Screen>Contract.kt   ← State + Action + Event (top-level declarations, no wrapping object)
+  <Screen>Contract.kt   ← Action + Event only (top-level declarations, no wrapping object)
   <Screen>ViewModel.kt
 ```
 
 ### Contract file pattern
 
+The contract file contains only `Action` and `Event` sealed interfaces. Do **not** put `State` or any model/data classes (e.g. `UploadState`, `UploadStatus`) in the contract file — those belong in the ViewModel file or their own file.
+
 ```kotlin
 // LoginContract.kt
-data class LoginState(
-    val email: String = "",
-    val isLoading: Boolean = false,
-    val error: String? = null
-)
-
 sealed interface LoginAction {
     data class OnEmailChange(val email: String) : LoginAction
     data object OnSubmit : LoginAction
