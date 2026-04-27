@@ -47,6 +47,8 @@ open class LoginViewModel(
         viewModelScope.launch { events.collect { block(it) } }
     }
 
+    fun currentState(): LoginState = _state.value
+
     fun dispose() { viewModelScope.cancel() }
 
     private fun login() {

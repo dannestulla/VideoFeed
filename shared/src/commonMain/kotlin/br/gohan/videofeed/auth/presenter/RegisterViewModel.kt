@@ -47,6 +47,8 @@ class RegisterViewModel(
         viewModelScope.launch { events.collect { block(it) } }
     }
 
+    fun currentState(): RegisterState = _state.value
+
     fun dispose() { viewModelScope.cancel() }
 
     private fun register() {

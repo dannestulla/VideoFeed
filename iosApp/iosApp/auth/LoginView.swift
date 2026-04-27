@@ -7,8 +7,9 @@ final class LoginViewHost {
     let vm: LoginViewModel
 
     init() {
-        vm = IOSKoinHelperKt.loginViewModel()
-        state = LoginState()
+        let vm = IOSKoinHelperKt.loginViewModel()
+        self.vm = vm
+        self.state = vm.currentState()
     }
 }
 

@@ -8,8 +8,9 @@ final class FeedViewHost {
     let vm: FeedViewModel
 
     init() {
-        vm = IOSKoinHelperKt.feedViewModel()
-        state = FeedState()
+        let vm = IOSKoinHelperKt.feedViewModel()
+        self.vm = vm
+        self.state = vm.currentState()
     }
 }
 

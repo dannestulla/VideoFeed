@@ -7,8 +7,9 @@ final class RegisterViewHost {
     let vm: RegisterViewModel
 
     init() {
-        vm = IOSKoinHelperKt.registerViewModel()
-        state = RegisterState()
+        let vm = IOSKoinHelperKt.registerViewModel()
+        self.vm = vm
+        self.state = vm.currentState()
     }
 }
 

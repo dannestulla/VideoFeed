@@ -52,6 +52,8 @@ class FeedViewModel(
         viewModelScope.launch { events.collect { block(it) } }
     }
 
+    fun currentState(): FeedState = _state.value
+
     fun dispose() { viewModelScope.cancel() }
 
     private fun onVideoVisible(index: Int) {
