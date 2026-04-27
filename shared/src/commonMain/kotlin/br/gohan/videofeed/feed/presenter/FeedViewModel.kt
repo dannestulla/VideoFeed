@@ -6,10 +6,13 @@ import br.gohan.videofeed.core.error.onFailure
 import br.gohan.videofeed.core.error.onSuccess
 import br.gohan.videofeed.feed.domain.VideoRemoteDataSource
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 class FeedViewModel(
@@ -17,10 +20,12 @@ class FeedViewModel(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FeedState())
-    val state = _state.asStateFlow()
+    @kotlin.native.HiddenFromObjC
+    val state: StateFlow<FeedState> = _state.asStateFlow()
 
     private val _events = Channel<FeedEvent>()
-    val events = _events.receiveAsFlow()
+    @kotlin.native.HiddenFromObjC
+    val events: Flow<FeedEvent> = _events.receiveAsFlow()
 
     private var currentPage = 1
     private var isLastPage = false
@@ -39,6 +44,18 @@ class FeedViewModel(
         }
     }
 
+    fun observeState(block: (FeedState) -> Unit) {
+        viewModelScope.launch { state.collect { block(it) } }
+    }
+
+    fun observeEvents(block: (FeedEvent) -> Unit) {
+        viewModelScope.launch { events.collect { block(it) } }
+    }
+
+    fun currentState(): FeedState = _state.value
+
+    fun dispose() { viewModelScope.cancel() }
+
     private fun onVideoVisible(index: Int) {
         _state.update { it.copy(currentIndex = index) }
         val shouldLoadMore = !isLastPage &&
@@ -53,7 +70,6 @@ class FeedViewModel(
             videoDataSource.getFeed(page = 1, limit = 10)
                 .onSuccess { result ->
                     if (result.videos.isEmpty()) {
-                        // If bucket has no videos, open upload screen
                         _state.update { it.copy(isLoading = false) }
                         _events.send(FeedEvent.NavigateToUpload)
                         return@launch

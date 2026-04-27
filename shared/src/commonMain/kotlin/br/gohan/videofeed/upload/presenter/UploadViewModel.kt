@@ -6,22 +6,27 @@ import br.gohan.videofeed.core.error.Result
 import br.gohan.videofeed.upload.domain.R2UploadDataSource
 import br.gohan.videofeed.upload.domain.UploadRemoteDataSource
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
-class UploadViewModel(
+open class UploadViewModel(
     private val remoteDataSource: UploadRemoteDataSource,
     private val r2DataSource: R2UploadDataSource
 ) : ViewModel() {
+
     private val _state = MutableStateFlow(UploadState())
+    @kotlin.native.HiddenFromObjC
     val state: StateFlow<UploadState> = _state.asStateFlow()
 
     private val _events = Channel<UploadEvent>()
-    val events = _events.receiveAsFlow()
+    @kotlin.native.HiddenFromObjC
+    val events: Flow<UploadEvent> = _events.receiveAsFlow()
 
     private var selectedBytes: ByteArray? = null
     private var selectedMimeType: String = "video/mp4"
@@ -38,6 +43,18 @@ class UploadViewModel(
         }
     }
 
+    fun observeState(block: (UploadState) -> Unit) {
+        viewModelScope.launch { state.collect { block(it) } }
+    }
+
+    fun observeEvents(block: (UploadEvent) -> Unit) {
+        viewModelScope.launch { events.collect { block(it) } }
+    }
+
+    fun currentState(): UploadState = _state.value
+
+    fun dispose() { viewModelScope.cancel() }
+
     private fun upload() {
         val bytes = selectedBytes ?: return
         val filename = _state.value.selectedFilename ?: return
@@ -53,7 +70,6 @@ class UploadViewModel(
             }
             val presign = (presignResult as Result.Success).data
 
-            // Uploads video to bucket
             r2DataSource.upload(presign.uploadUrl, bytes, selectedMimeType).collect { result ->
                 when (result) {
                     is Result.Success -> _state.update { it.copy(status = UploadStatus.Uploading(result.data)) }
@@ -65,7 +81,6 @@ class UploadViewModel(
             }
             if (_state.value.status is UploadStatus.Error) return@launch
 
-            // Adds video meta data to db
             _state.update { it.copy(status = UploadStatus.Finalizing) }
             val registerResult = remoteDataSource.registerVideo(presign.videoKey, title)
             if (registerResult is Result.Error) {
