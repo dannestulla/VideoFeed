@@ -1,24 +1,33 @@
 import SwiftUI
 import PhotosUI
-import VideoFeed
-import KMPNativeCoroutinesAsync
+import Shared
+
+@Observable
+final class UploadViewHost {
+    var state: UploadState
+    private let vm: UploadViewModel
+
+    init() {
+        vm = uploadViewModel()
+        state = vm.state.value
+    }
+
+    func onAction(_ action: UploadAction) { vm.onAction(action: action) }
+}
 
 struct UploadView: View {
-    @StateObject private var holder = ViewModelHolder(IOSViewModelFactory.shared.uploadViewModel())
-    @State private var state = UploadState(title: "", selectedFilename: nil, status: UploadStatusIdle())
+    @State private var host = UploadViewHost()
     @State private var pickerItem: PhotosPickerItem? = nil
     let onSuccess: () -> Void
 
-    private var vm: UploadViewModel { holder.viewModel }
-
     private var isLoading: Bool {
-        state.status is UploadStatusPresigning
-            || state.status is UploadStatusUploading
-            || state.status is UploadStatusFinalizing
+        host.state.status is UploadStatus.Presigning
+            || host.state.status is UploadStatus.Uploading
+            || host.state.status is UploadStatus.Finalizing
     }
 
     private var canSubmit: Bool {
-        !isLoading && state.selectedFilename != nil && !state.title.isEmpty
+        !isLoading && host.state.selectedFilename != nil && !host.state.title.isEmpty
     }
 
     var body: some View {
@@ -26,7 +35,7 @@ struct UploadView: View {
             Text("Upload Video").font(.title).bold()
 
             PhotosPicker(selection: $pickerItem, matching: .videos, photoLibrary: .shared()) {
-                Label(state.selectedFilename ?? "Select Video", systemImage: "video.badge.plus")
+                Label(host.state.selectedFilename ?? "Select Video", systemImage: "video.badge.plus")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
@@ -37,30 +46,30 @@ struct UploadView: View {
             }
 
             TextField("Title", text: Binding(
-                get: { state.title },
-                set: { vm.onAction(action: UploadActionOnTitleChange(title: $0)) }
+                get: { host.state.title },
+                set: { host.onAction(UploadAction.OnTitleChange(title: $0)) }
             ))
             .textFieldStyle(.roundedBorder)
             .disabled(isLoading)
 
             Group {
-                if let uploading = state.status as? UploadStatusUploading {
+                if let uploading = host.state.status as? UploadStatus.Uploading {
                     VStack(spacing: 8) {
                         ProgressView(value: Double(uploading.progress))
                         Text("Uploading… \(Int(uploading.progress * 100))%").font(.caption)
                     }
-                } else if state.status is UploadStatusPresigning {
+                } else if host.state.status is UploadStatus.Presigning {
                     HStack { ProgressView(); Text("Preparing upload…") }
-                } else if state.status is UploadStatusFinalizing {
+                } else if host.state.status is UploadStatus.Finalizing {
                     HStack { ProgressView(); Text("Saving…") }
-                } else if state.status is UploadStatusDone {
+                } else if host.state.status is UploadStatus.Done {
                     Text("Upload complete!").foregroundColor(.green)
-                } else if let error = state.status as? UploadStatusError {
+                } else if let error = host.state.status as? UploadStatus.Error {
                     Text(error.message).foregroundColor(.red).font(.caption)
                 }
             }
 
-            Button(action: { vm.onAction(action: UploadActionOnSubmit()) }) {
+            Button(action: { host.onAction(UploadAction.OnSubmit()) }) {
                 Text("Upload").frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -70,13 +79,13 @@ struct UploadView: View {
         }
         .padding()
         .task {
-            for await newState in asyncSequence(for: vm.stateNative) {
-                state = newState
+            for await s in host.vm.state {
+                host.state = s
             }
         }
         .task {
-            for await event in asyncSequence(for: vm.eventsNative) {
-                if event is UploadEventNavigateToFeed { onSuccess() }
+            for await event in host.vm.events {
+                if event is UploadEvent.NavigateToFeed { onSuccess() }
             }
         }
     }
@@ -89,7 +98,7 @@ struct UploadView: View {
         for (i, b) in bytes.enumerated() {
             kotlinBytes.set(index: Int32(i), value: Int8(bitPattern: b))
         }
-        vm.onAction(action: UploadActionOnFileSelected(
+        host.onAction(UploadAction.OnFileSelected(
             bytes: kotlinBytes,
             filename: url.lastPathComponent,
             mimeType: "video/mp4"

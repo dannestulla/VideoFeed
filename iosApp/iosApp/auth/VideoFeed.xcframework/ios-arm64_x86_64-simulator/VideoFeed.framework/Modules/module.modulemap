@@ -1,5 +1,0 @@
-framework module "VideoFeed" {
-    umbrella header "VideoFeed.h"
-    export *
-    module * { export * }
-}

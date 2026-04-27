@@ -1,11 +1,22 @@
 import SwiftUI
 import AVFoundation
-import VideoFeed
-import KMPNativeCoroutinesAsync
+import Shared
+
+@Observable
+final class FeedViewHost {
+    var state: FeedState
+    private let vm: FeedViewModel
+
+    init() {
+        vm = feedViewModel()
+        state = vm.state.value
+    }
+
+    func onAction(_ action: FeedAction) { vm.onAction(action: action) }
+}
 
 struct FeedView: View {
-    @StateObject private var holder = ViewModelHolder(IOSViewModelFactory.shared.feedViewModel())
-    @State private var state = FeedState(videos: [], isLoading: false, error: nil, currentIndex: 0)
+    @State private var host = FeedViewHost()
     @State private var currentIndex = 0
     @State private var players: [String: AVPlayer] = [:]
     private let preloader = VideoPreloader()
@@ -13,16 +24,14 @@ struct FeedView: View {
     let onNavigateToLogin: () -> Void
     let onNavigateToUpload: () -> Void
 
-    private var vm: FeedViewModel { holder.viewModel }
-
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .topTrailing) {
-                if state.videos.isEmpty && state.isLoading {
+                if host.state.videos.isEmpty && host.state.isLoading {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     TabView(selection: $currentIndex) {
-                        ForEach(Array(state.videos.enumerated()), id: \.element.id) { index, video in
+                        ForEach(Array(host.state.videos.enumerated()), id: \.element.id) { index, video in
                             VideoItemView(
                                 video: video,
                                 player: player(for: video),
@@ -35,7 +44,7 @@ struct FeedView: View {
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .ignoresSafeArea()
                     .onChange(of: currentIndex) { _, newIndex in
-                        vm.onAction(action: FeedActionOnVideoVisible(index: Int32(newIndex)))
+                        host.onAction(FeedAction.OnVideoVisible(index: Int32(newIndex)))
                         prefetchNext(from: newIndex)
                     }
                 }
@@ -47,14 +56,14 @@ struct FeedView: View {
             }
         }
         .task {
-            for await newState in asyncSequence(for: vm.stateNative) {
-                state = newState
+            for await s in host.vm.state {
+                host.state = s
             }
         }
         .task {
-            for await event in asyncSequence(for: vm.eventsNative) {
-                if event is FeedEventNavigateToLogin { onNavigateToLogin() }
-                else if event is FeedEventNavigateToUpload { onNavigateToUpload() }
+            for await event in host.vm.events {
+                if event is FeedEvent.NavigateToLogin { onNavigateToLogin() }
+                else if event is FeedEvent.NavigateToUpload { onNavigateToUpload() }
             }
         }
     }
@@ -75,8 +84,8 @@ struct FeedView: View {
     private func prefetchNext(from index: Int) {
         let urls = (1...2).compactMap { offset -> URL? in
             let next = index + offset
-            guard next < state.videos.count else { return nil }
-            return URL(string: state.videos[next].cdnUrl)
+            guard next < host.state.videos.count else { return nil }
+            return URL(string: host.state.videos[next].cdnUrl)
         }
         Task { await preloader.preload(urls: urls) }
     }

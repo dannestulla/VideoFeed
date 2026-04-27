@@ -1,10 +1,10 @@
 import SwiftUI
-import VideoFeed
+import Shared
 
 @main
 struct iosAppApp: App {
     init() {
-        VideoFeedKt.initKoin(baseUrl: "http://localhost:8081")
+        IOSKoinHelperKt.doInitKoin(baseUrl: "http://localhost:8081")
     }
 
     var body: some Scene {
