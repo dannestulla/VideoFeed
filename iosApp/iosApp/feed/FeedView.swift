@@ -5,14 +5,12 @@ import Shared
 @Observable
 final class FeedViewHost {
     var state: FeedState
-    private let vm: FeedViewModel
+    let vm: FeedViewModel
 
     init() {
-        vm = feedViewModel()
-        state = vm.state.value
+        vm = IOSKoinHelperKt.feedViewModel()
+        state = FeedState()
     }
-
-    func onAction(_ action: FeedAction) { vm.onAction(action: action) }
 }
 
 struct FeedView: View {
@@ -44,7 +42,7 @@ struct FeedView: View {
                     .tabViewStyle(.page(indexDisplayMode: .never))
                     .ignoresSafeArea()
                     .onChange(of: currentIndex) { _, newIndex in
-                        host.onAction(FeedAction.OnVideoVisible(index: Int32(newIndex)))
+                        host.vm.onAction(action: FeedActionOnVideoVisible(index: Int32(newIndex)))
                         prefetchNext(from: newIndex)
                     }
                 }
@@ -55,17 +53,14 @@ struct FeedView: View {
                 .foregroundColor(.white)
             }
         }
-        .task {
-            for await s in host.vm.state {
-                host.state = s
+        .onAppear {
+            host.vm.observeState { s in host.state = s }
+            host.vm.observeEvents { event in
+                if event is FeedEventNavigateToLogin { onNavigateToLogin() }
+                else if event is FeedEventNavigateToUpload { onNavigateToUpload() }
             }
         }
-        .task {
-            for await event in host.vm.events {
-                if event is FeedEvent.NavigateToLogin { onNavigateToLogin() }
-                else if event is FeedEvent.NavigateToUpload { onNavigateToUpload() }
-            }
-        }
+        .onDisappear { host.vm.clear() }
     }
 
     private func player(for video: VideoUi) -> AVPlayer {

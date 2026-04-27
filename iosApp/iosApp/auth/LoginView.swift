@@ -4,14 +4,12 @@ import Shared
 @Observable
 final class LoginViewHost {
     var state: LoginState
-    private let vm: LoginViewModel
+    let vm: LoginViewModel
 
     init() {
-        vm = loginViewModel()
-        state = vm.state.value
+        vm = IOSKoinHelperKt.loginViewModel()
+        state = LoginState()
     }
-
-    func onAction(_ action: LoginAction) { vm.onAction(action: action) }
 }
 
 struct LoginView: View {
@@ -24,7 +22,7 @@ struct LoginView: View {
 
             TextField("Email", text: Binding(
                 get: { host.state.email },
-                set: { host.onAction(LoginAction.OnEmailChange(email: $0)) }
+                set: { host.vm.onAction(action: LoginActionOnEmailChange(email: $0)) }
             ))
             .keyboardType(.emailAddress)
             .autocapitalization(.none)
@@ -32,7 +30,7 @@ struct LoginView: View {
 
             SecureField("Password", text: Binding(
                 get: { host.state.password },
-                set: { host.onAction(LoginAction.OnPasswordChange(password: $0)) }
+                set: { host.vm.onAction(action: LoginActionOnPasswordChange(password: $0)) }
             ))
             .textFieldStyle(.roundedBorder)
 
@@ -40,7 +38,7 @@ struct LoginView: View {
                 Text(error).foregroundColor(.red).font(.caption)
             }
 
-            Button(action: { host.onAction(LoginAction.OnSubmit()) }) {
+            Button(action: { host.vm.onAction(action: LoginActionOnSubmit()) }) {
                 if host.state.isLoading {
                     ProgressView().frame(maxWidth: .infinity)
                 } else {
@@ -51,15 +49,12 @@ struct LoginView: View {
             .disabled(host.state.isLoading)
         }
         .padding()
-        .task {
-            for await s in host.vm.state {
-                host.state = s
+        .onAppear {
+            host.vm.observeState { s in host.state = s }
+            host.vm.observeEvents { event in
+                if event is LoginEventNavigateToFeed { onSuccess() }
             }
         }
-        .task {
-            for await event in host.vm.events {
-                if event is LoginEvent.NavigateToFeed { onSuccess() }
-            }
-        }
+        .onDisappear { host.vm.clear() }
     }
 }

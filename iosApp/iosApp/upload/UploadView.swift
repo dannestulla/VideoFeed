@@ -5,14 +5,12 @@ import Shared
 @Observable
 final class UploadViewHost {
     var state: UploadState
-    private let vm: UploadViewModel
+    let vm: UploadViewModel
 
     init() {
-        vm = uploadViewModel()
-        state = vm.state.value
+        vm = IOSKoinHelperKt.uploadViewModel()
+        state = UploadState()
     }
-
-    func onAction(_ action: UploadAction) { vm.onAction(action: action) }
 }
 
 struct UploadView: View {
@@ -21,9 +19,9 @@ struct UploadView: View {
     let onSuccess: () -> Void
 
     private var isLoading: Bool {
-        host.state.status is UploadStatus.Presigning
-            || host.state.status is UploadStatus.Uploading
-            || host.state.status is UploadStatus.Finalizing
+        host.state.status is UploadStatusPresigning
+            || host.state.status is UploadStatusUploading
+            || host.state.status is UploadStatusFinalizing
     }
 
     private var canSubmit: Bool {
@@ -47,29 +45,29 @@ struct UploadView: View {
 
             TextField("Title", text: Binding(
                 get: { host.state.title },
-                set: { host.onAction(UploadAction.OnTitleChange(title: $0)) }
+                set: { host.vm.onAction(action: UploadActionOnTitleChange(title: $0)) }
             ))
             .textFieldStyle(.roundedBorder)
             .disabled(isLoading)
 
             Group {
-                if let uploading = host.state.status as? UploadStatus.Uploading {
+                if let uploading = host.state.status as? UploadStatusUploading {
                     VStack(spacing: 8) {
                         ProgressView(value: Double(uploading.progress))
                         Text("Uploading… \(Int(uploading.progress * 100))%").font(.caption)
                     }
-                } else if host.state.status is UploadStatus.Presigning {
+                } else if host.state.status is UploadStatusPresigning {
                     HStack { ProgressView(); Text("Preparing upload…") }
-                } else if host.state.status is UploadStatus.Finalizing {
+                } else if host.state.status is UploadStatusFinalizing {
                     HStack { ProgressView(); Text("Saving…") }
-                } else if host.state.status is UploadStatus.Done {
+                } else if host.state.status is UploadStatusDone {
                     Text("Upload complete!").foregroundColor(.green)
-                } else if let error = host.state.status as? UploadStatus.Error {
+                } else if let error = host.state.status as? UploadStatusError {
                     Text(error.message).foregroundColor(.red).font(.caption)
                 }
             }
 
-            Button(action: { host.onAction(UploadAction.OnSubmit()) }) {
+            Button(action: { host.vm.onAction(action: UploadActionOnSubmit()) }) {
                 Text("Upload").frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -78,16 +76,13 @@ struct UploadView: View {
             Spacer()
         }
         .padding()
-        .task {
-            for await s in host.vm.state {
-                host.state = s
+        .onAppear {
+            host.vm.observeState { s in host.state = s }
+            host.vm.observeEvents { event in
+                if event is UploadEventNavigateToFeed { onSuccess() }
             }
         }
-        .task {
-            for await event in host.vm.events {
-                if event is UploadEvent.NavigateToFeed { onSuccess() }
-            }
-        }
+        .onDisappear { host.vm.clear() }
     }
 
     private func loadVideo(from item: PhotosPickerItem) async {
@@ -98,7 +93,7 @@ struct UploadView: View {
         for (i, b) in bytes.enumerated() {
             kotlinBytes.set(index: Int32(i), value: Int8(bitPattern: b))
         }
-        host.onAction(UploadAction.OnFileSelected(
+        host.vm.onAction(action: UploadActionOnFileSelected(
             bytes: kotlinBytes,
             filename: url.lastPathComponent,
             mimeType: "video/mp4"

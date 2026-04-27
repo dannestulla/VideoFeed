@@ -4,14 +4,12 @@ import Shared
 @Observable
 final class RegisterViewHost {
     var state: RegisterState
-    private let vm: RegisterViewModel
+    let vm: RegisterViewModel
 
     init() {
-        vm = registerViewModel()
-        state = vm.state.value
+        vm = IOSKoinHelperKt.registerViewModel()
+        state = RegisterState()
     }
-
-    func onAction(_ action: RegisterAction) { vm.onAction(action: action) }
 }
 
 struct RegisterView: View {
@@ -24,7 +22,7 @@ struct RegisterView: View {
 
             TextField("Email", text: Binding(
                 get: { host.state.email },
-                set: { host.onAction(RegisterAction.OnEmailChange(email: $0)) }
+                set: { host.vm.onAction(action: RegisterActionOnEmailChange(email: $0)) }
             ))
             .keyboardType(.emailAddress)
             .autocapitalization(.none)
@@ -32,7 +30,7 @@ struct RegisterView: View {
 
             SecureField("Password", text: Binding(
                 get: { host.state.password },
-                set: { host.onAction(RegisterAction.OnPasswordChange(password: $0)) }
+                set: { host.vm.onAction(action: RegisterActionOnPasswordChange(password: $0)) }
             ))
             .textFieldStyle(.roundedBorder)
 
@@ -40,7 +38,7 @@ struct RegisterView: View {
                 Text(error).foregroundColor(.red).font(.caption)
             }
 
-            Button(action: { host.onAction(RegisterAction.OnSubmit()) }) {
+            Button(action: { host.vm.onAction(action: RegisterActionOnSubmit()) }) {
                 if host.state.isLoading {
                     ProgressView().frame(maxWidth: .infinity)
                 } else {
@@ -51,15 +49,12 @@ struct RegisterView: View {
             .disabled(host.state.isLoading)
         }
         .padding()
-        .task {
-            for await s in host.vm.state {
-                host.state = s
+        .onAppear {
+            host.vm.observeState { s in host.state = s }
+            host.vm.observeEvents { event in
+                if event is RegisterEventNavigateToFeed { onSuccess() }
             }
         }
-        .task {
-            for await event in host.vm.events {
-                if event is RegisterEvent.NavigateToFeed { onSuccess() }
-            }
-        }
+        .onDisappear { host.vm.clear() }
     }
 }
