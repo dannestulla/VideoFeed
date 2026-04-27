@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 class FeedViewModel(
@@ -50,6 +51,8 @@ class FeedViewModel(
     fun observeEvents(block: (FeedEvent) -> Unit) {
         viewModelScope.launch { events.collect { block(it) } }
     }
+
+    fun dispose() { viewModelScope.cancel() }
 
     private fun onVideoVisible(index: Int) {
         _state.update { it.copy(currentIndex = index) }

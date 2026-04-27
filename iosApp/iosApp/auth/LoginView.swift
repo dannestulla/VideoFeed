@@ -55,6 +55,6 @@ struct LoginView: View {
                 if event is LoginEventNavigateToFeed { onSuccess() }
             }
         }
-        .onDisappear { host.vm.clear() }
+        .onDisappear { host.vm.dispose() }
     }
 }

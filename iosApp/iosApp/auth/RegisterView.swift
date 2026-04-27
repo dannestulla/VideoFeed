@@ -55,6 +55,6 @@ struct RegisterView: View {
                 if event is RegisterEventNavigateToFeed { onSuccess() }
             }
         }
-        .onDisappear { host.vm.clear() }
+        .onDisappear { host.vm.dispose() }
     }
 }

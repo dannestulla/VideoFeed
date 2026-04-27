@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 open class UploadViewModel(
@@ -49,6 +50,10 @@ open class UploadViewModel(
     fun observeEvents(block: (UploadEvent) -> Unit) {
         viewModelScope.launch { events.collect { block(it) } }
     }
+
+    fun currentState(): UploadState = _state.value
+
+    fun dispose() { viewModelScope.cancel() }
 
     private fun upload() {
         val bytes = selectedBytes ?: return

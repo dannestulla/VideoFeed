@@ -8,8 +8,9 @@ final class UploadViewHost {
     let vm: UploadViewModel
 
     init() {
-        vm = IOSKoinHelperKt.uploadViewModel()
-        state = UploadState()
+        let vm = IOSKoinHelperKt.uploadViewModel()
+        self.vm = vm
+        self.state = vm.currentState()
     }
 }
 
@@ -82,7 +83,7 @@ struct UploadView: View {
                 if event is UploadEventNavigateToFeed { onSuccess() }
             }
         }
-        .onDisappear { host.vm.clear() }
+        .onDisappear { host.vm.dispose() }
     }
 
     private func loadVideo(from item: PhotosPickerItem) async {

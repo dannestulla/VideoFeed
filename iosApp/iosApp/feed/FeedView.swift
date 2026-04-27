@@ -60,7 +60,7 @@ struct FeedView: View {
                 else if event is FeedEventNavigateToUpload { onNavigateToUpload() }
             }
         }
-        .onDisappear { host.vm.clear() }
+        .onDisappear { host.vm.dispose() }
     }
 
     private func player(for video: VideoUi) -> AVPlayer {

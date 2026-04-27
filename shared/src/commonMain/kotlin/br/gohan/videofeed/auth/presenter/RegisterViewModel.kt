@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 
 class RegisterViewModel(
@@ -45,6 +46,8 @@ class RegisterViewModel(
     fun observeEvents(block: (RegisterEvent) -> Unit) {
         viewModelScope.launch { events.collect { block(it) } }
     }
+
+    fun dispose() { viewModelScope.cancel() }
 
     private fun register() {
         viewModelScope.launch {
