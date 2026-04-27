@@ -6,9 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-/* End PBXBuildFile section */
-
 /* Begin PBXCopyFilesBuildPhase section */
 		4640BFE52F90632B0048903B /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
@@ -376,8 +373,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-
 	};
 	rootObject = 4640BF9F2F905D0F0048903B /* Project object */;
 }

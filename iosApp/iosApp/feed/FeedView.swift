@@ -67,14 +67,14 @@ struct FeedView: View {
     private func player(for video: VideoUi) -> AVPlayer {
         if let existing = players[video.id] { return existing }
         let url = URL(string: video.cdnUrl)!
-        let p: AVPlayer
+        let player: AVPlayer
         if let cached = preloader.asset(for: url) {
-            p = AVPlayer(playerItem: AVPlayerItem(asset: cached))
+            player = AVPlayer(playerItem: AVPlayerItem(asset: cached))
         } else {
-            p = AVPlayer(url: url)
+            player = AVPlayer(url: url)
         }
-        players[video.id] = p
-        return p
+        players[video.id] = player
+        return player
     }
 
     private func prefetchNext(from index: Int) {
