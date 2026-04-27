@@ -7,7 +7,9 @@ import br.gohan.videofeed.core.error.DataError
 import br.gohan.videofeed.core.error.onFailure
 import br.gohan.videofeed.core.error.onSuccess
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
@@ -18,10 +20,10 @@ class RegisterViewModel(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RegisterState())
-    val state = _state.asStateFlow()
+    val state: StateFlow<RegisterState> = _state.asStateFlow()
 
     private val _events = Channel<RegisterEvent>()
-    val events = _events.receiveAsFlow()
+    val events: Flow<RegisterEvent> = _events.receiveAsFlow()
 
     fun onAction(action: RegisterAction) {
         when (action) {
@@ -38,9 +40,7 @@ class RegisterViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             authDataSource.register(_state.value.email, _state.value.password)
-                .onSuccess {
-                    _events.send(RegisterEvent.NavigateToFeed)
-                }
+                .onSuccess { _events.send(RegisterEvent.NavigateToFeed) }
                 .onFailure { error ->
                     _state.update { it.copy(isLoading = false, error = error.toMessage()) }
                 }

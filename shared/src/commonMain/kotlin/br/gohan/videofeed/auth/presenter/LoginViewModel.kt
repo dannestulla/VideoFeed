@@ -7,21 +7,23 @@ import br.gohan.videofeed.core.error.DataError
 import br.gohan.videofeed.core.error.onFailure
 import br.gohan.videofeed.core.error.onSuccess
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class LoginViewModel(
+open class LoginViewModel(
     private val authDataSource: AuthRemoteDataSource
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LoginState())
-    val state = _state.asStateFlow()
+    val state: StateFlow<LoginState> = _state.asStateFlow()
 
     private val _events = Channel<LoginEvent>()
-    val events = _events.receiveAsFlow()
+    val events: Flow<LoginEvent> = _events.receiveAsFlow()
 
     fun onAction(action: LoginAction) {
         when (action) {
@@ -38,9 +40,7 @@ class LoginViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, error = null) }
             authDataSource.login(_state.value.email, _state.value.password)
-                .onSuccess {
-                    _events.send(LoginEvent.NavigateToFeed)
-                }
+                .onSuccess { _events.send(LoginEvent.NavigateToFeed) }
                 .onFailure { error ->
                     _state.update { it.copy(isLoading = false, error = error.toMessage()) }
                 }

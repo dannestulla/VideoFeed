@@ -6,6 +6,7 @@ import br.gohan.videofeed.core.error.Result
 import br.gohan.videofeed.upload.domain.R2UploadDataSource
 import br.gohan.videofeed.upload.domain.UploadRemoteDataSource
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,15 +14,16 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-class UploadViewModel(
+open class UploadViewModel(
     private val remoteDataSource: UploadRemoteDataSource,
     private val r2DataSource: R2UploadDataSource
 ) : ViewModel() {
+
     private val _state = MutableStateFlow(UploadState())
     val state: StateFlow<UploadState> = _state.asStateFlow()
 
     private val _events = Channel<UploadEvent>()
-    val events = _events.receiveAsFlow()
+    val events: Flow<UploadEvent> = _events.receiveAsFlow()
 
     private var selectedBytes: ByteArray? = null
     private var selectedMimeType: String = "video/mp4"
@@ -53,7 +55,6 @@ class UploadViewModel(
             }
             val presign = (presignResult as Result.Success).data
 
-            // Uploads video to bucket
             r2DataSource.upload(presign.uploadUrl, bytes, selectedMimeType).collect { result ->
                 when (result) {
                     is Result.Success -> _state.update { it.copy(status = UploadStatus.Uploading(result.data)) }
@@ -65,7 +66,6 @@ class UploadViewModel(
             }
             if (_state.value.status is UploadStatus.Error) return@launch
 
-            // Adds video meta data to db
             _state.update { it.copy(status = UploadStatus.Finalizing) }
             val registerResult = remoteDataSource.registerVideo(presign.videoKey, title)
             if (registerResult is Result.Error) {
