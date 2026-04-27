@@ -19,9 +19,11 @@ class FeedViewModel(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(FeedState())
+    @kotlin.native.HiddenFromObjC
     val state: StateFlow<FeedState> = _state.asStateFlow()
 
     private val _events = Channel<FeedEvent>()
+    @kotlin.native.HiddenFromObjC
     val events: Flow<FeedEvent> = _events.receiveAsFlow()
 
     private var currentPage = 1
@@ -39,6 +41,14 @@ class FeedViewModel(
             is FeedAction.OnUploadClick -> viewModelScope.launch { _events.send(FeedEvent.NavigateToUpload) }
             is FeedAction.OnLoginClick -> viewModelScope.launch { _events.send(FeedEvent.NavigateToLogin) }
         }
+    }
+
+    fun observeState(block: (FeedState) -> Unit) {
+        viewModelScope.launch { state.collect { block(it) } }
+    }
+
+    fun observeEvents(block: (FeedEvent) -> Unit) {
+        viewModelScope.launch { events.collect { block(it) } }
     }
 
     private fun onVideoVisible(index: Int) {

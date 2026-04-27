@@ -20,9 +20,11 @@ open class UploadViewModel(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(UploadState())
+    @kotlin.native.HiddenFromObjC
     val state: StateFlow<UploadState> = _state.asStateFlow()
 
     private val _events = Channel<UploadEvent>()
+    @kotlin.native.HiddenFromObjC
     val events: Flow<UploadEvent> = _events.receiveAsFlow()
 
     private var selectedBytes: ByteArray? = null
@@ -38,6 +40,14 @@ open class UploadViewModel(
             is UploadAction.OnTitleChange -> _state.update { it.copy(title = action.title) }
             is UploadAction.OnSubmit -> upload()
         }
+    }
+
+    fun observeState(block: (UploadState) -> Unit) {
+        viewModelScope.launch { state.collect { block(it) } }
+    }
+
+    fun observeEvents(block: (UploadEvent) -> Unit) {
+        viewModelScope.launch { events.collect { block(it) } }
     }
 
     private fun upload() {

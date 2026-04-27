@@ -20,9 +20,11 @@ class RegisterViewModel(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(RegisterState())
+    @kotlin.native.HiddenFromObjC
     val state: StateFlow<RegisterState> = _state.asStateFlow()
 
     private val _events = Channel<RegisterEvent>()
+    @kotlin.native.HiddenFromObjC
     val events: Flow<RegisterEvent> = _events.receiveAsFlow()
 
     fun onAction(action: RegisterAction) {
@@ -34,6 +36,14 @@ class RegisterViewModel(
                 viewModelScope.launch { _events.send(RegisterEvent.NavigateToLogin) }
             }
         }
+    }
+
+    fun observeState(block: (RegisterState) -> Unit) {
+        viewModelScope.launch { state.collect { block(it) } }
+    }
+
+    fun observeEvents(block: (RegisterEvent) -> Unit) {
+        viewModelScope.launch { events.collect { block(it) } }
     }
 
     private fun register() {

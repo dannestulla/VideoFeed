@@ -54,6 +54,10 @@ kotlin {
         }
     }
 
+    sourceSets.all {
+        languageSettings.optIn("kotlin.experimental.ExperimentalObjCRefinement")
+    }
+
     @OptIn(org.jetbrains.kotlin.gradle.swiftexport.ExperimentalSwiftExportDsl::class)
     swiftExport {}
 }
