@@ -16,7 +16,8 @@ A TikTok-style short video feed app built as a KMP portfolio project to showcase
 | Android UI | Compose + Material 3 |
 | Video Playback | Media3 / ExoPlayer |
 | KMP Shared | MVI ViewModels (Kotlin coroutines + StateFlow) |
-| Swift Interop | SKIE |
+| iOS UI | SwiftUI + `@Observable` |
+| Swift Interop | Kotlin/Native ObjC interop (Swift Export ready) |
 | DI | Koin |
 | Networking | Ktor HttpClient |
 | Token Storage | DataStore (Android) |
@@ -31,6 +32,7 @@ A TikTok-style short video feed app built as a KMP portfolio project to showcase
 ```
 VideoFeed/
 ├── composeApp/   # Android app — Compose UI, navigation, Koin Android
+├── iosApp/       # iOS app — SwiftUI views consuming shared ViewModels
 ├── shared/       # KMP shared — domain, data, presenter (as packages)
 └── server/       # Ktor backend
 ```
@@ -56,25 +58,39 @@ Android-specific UI lives in `composeApp/src/androidMain/`.
 ### Prerequisites
 
 - Android Studio Hedgehog or newer
+- Xcode 15+ (for iOS)
 - JDK 17+
-- A running instance of the backend (or update `BASE_URL` in `local.properties`)
+- [ngrok](https://ngrok.com) (for device testing over the internet)
 
-### Run Android App
+### 1. Start the backend
 
-```shell
-# macOS/Linux
-./gradlew :composeApp:assembleDebug
-
-# Windows
-.\gradlew.bat :composeApp:assembleDebug
-```
-
-### Run Server
+Run the `:server` configuration from Android Studio, or:
 
 ```shell
-# macOS/Linux
 ./gradlew :server:run
-
-# Windows
-.\gradlew.bat :server:run
 ```
+
+The server binds to `0.0.0.0:8081`.
+
+### 2. Expose it via ngrok (for physical devices)
+
+```shell
+ngrok http 8081
+```
+
+Copy the HTTPS URL (e.g. `https://abc123.ngrok-free.app`) and update:
+
+- **Android**: `composeApp/build.gradle.kts` → `buildConfigField("String", "BASE_URL", "\"https://abc123.ngrok-free.app\"")`
+- **iOS**: `iosApp/iosApp/iosApp.swift` → `IOSKoinHelperKt.doInitKoin(baseUrl: "https://abc123.ngrok-free.app")`
+
+> For emulator-only Android development use `http://10.0.2.2:8081` instead.
+
+### 3. Run Android
+
+Select the `composeApp` run configuration in Android Studio and run on device or emulator.
+
+### 4. Run iOS
+
+Open `iosApp/iosApp.xcodeproj` in Xcode, select your simulator or device, and press **⌘R**.
+
+The Xcode build phase runs `embedAndSignAppleFrameworkForXcode` which builds the shared KMP framework automatically.
